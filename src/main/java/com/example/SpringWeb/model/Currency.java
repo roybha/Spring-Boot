@@ -29,7 +29,7 @@ public enum Currency {
     // Конвертація з однієї валюти в іншу
     public  static double convertTo(Currency fromCurrency, Currency toCurrency, double value) {
         // Спочатку переводимо в EUR, потім з EUR в targetCurrency
-        double valueInEUR = fromCurrency.fromEUR(value);
+        double valueInEUR = fromCurrency.toEUR(value);
         return toCurrency.fromEUR(valueInEUR);
     }
     public static Currency getFromName(String currencyName) {
