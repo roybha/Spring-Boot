@@ -16,6 +16,10 @@
     <li><a href="/customers/find">Знайти певного користувача за ID</a></li>
     <li><a href="/customers/change">Редагувати клієнта</a></li>
     <li><a href="/accounts/operation">Провести операції із акаунтами </a></li>
+    <li><a href="/employers/create">Додати нову компанію</a></li>
+    <li><a href="/employers/change">Редагувати компанію</a></li>
+    <li><a href="/employers/find">Знайти певну компанію за назвою</a></li>
+    <li><a href="/employers/all">Переглянути список компаній</a></li>
 </ul>
 
 </body>

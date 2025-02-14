@@ -1,5 +1,6 @@
-<%@ page import="com.example.SpringWeb.model.Account" %>
+<%@ page import="com.example.SpringWeb.model.Employer" %>
 <%@ page import="java.util.List" %>
+<%@ page import="com.example.SpringWeb.model.Account" %>
 <%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="uk">
@@ -9,13 +10,12 @@
     <link rel="stylesheet" type="text/css" href="/style.css">
 </head>
 <body>
+
 <c:if test="${not empty error}">
     <p style="color:red;">${error}</p>
 </c:if>
 
-
 <h2>Пошук клієнта за ID</h2>
-
 <form action="/customers/find" method="GET">
     <label for="id">Введіть ID клієнта:</label>
     <input type="number" id="id" name="id" required min="1">
@@ -31,7 +31,34 @@
     <p><strong>Вік:</strong> ${customer.age}</p>
 </c:if>
 
-
+<%
+    List<Employer> employers = (List<Employer>) request.getAttribute("employers");
+    if (employers != null && !employers.isEmpty()) {
+%>
+<h3>Компанії, на які працює клієнт</h3>
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Назва компанії</th>
+        <th>Адреса</th>
+    </tr>
+    <%
+        for (Employer employer : employers) {
+    %>
+    <tr>
+        <td><%= employer.getId() %></td>
+        <td><%= employer.getName() %></td>
+        <td><%= employer.getAddress() %></td>
+    </tr>
+    <% } %>
+</table>
+<%
+} else {
+%>
+<p>Клієнт не працює в жодній компанії.</p>
+<%
+    }
+%>
 
 <%
     List<Account> accounts = (List<Account>) request.getAttribute("accounts");
@@ -61,11 +88,10 @@
 <%
     }
 %>
+
 <form action="/menu" method="GET">
     <button type="submit">Повернутися в меню</button>
 </form>
 
-
 </body>
 </html>
-

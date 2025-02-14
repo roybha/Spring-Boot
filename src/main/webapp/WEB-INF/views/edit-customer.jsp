@@ -1,6 +1,7 @@
 <%@ page import="com.example.SpringWeb.model.Customer" %>
 <%@ page import="com.example.SpringWeb.model.Account" %>
 <%@ page import="java.util.List" %>
+<%@ page import="com.example.SpringWeb.model.Employer" %>
 <%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="uk">
@@ -58,8 +59,6 @@
     <button type="submit">Зберегти зміни</button>
 </form>
 
-
-
 <%
     List<Account> accounts = (List<Account>) request.getAttribute("accounts");
     if (accounts != null && !accounts.isEmpty()) {
@@ -113,12 +112,57 @@
 
     <button type="submit">Створити рахунок</button>
 </form>
+
+
+<h3>Додати клієнта до компанії</h3>
+<form action="/customers/add_to_employer" method="POST">
+    <input type="hidden" name="customerId" value="<%= customer.getId() %>">
+    <label for="employerName">Назва компанії:</label>
+    <input type="number" id="employerName" name="employerName" required ><br><br>
+    <button type="submit">Додати до компанії</button>
+</form>
+<h3>Компанії, де працює цей клієнт</h3>
+
+<%
+    List<Employer> employers = (List<Employer>) request.getAttribute("employers");
+    if (employers != null && !employers.isEmpty()) {
+%>
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Назва</th>
+        <th>Адреса</th>
+        <th>Дії</th>
+    </tr>
+    <%
+        for (Employer employer : employers) {
+    %>
+    <tr>
+        <td><%= employer.getId() %></td>
+        <td><%= employer.getName() %></td>
+        <td><%= employer.getAddress() %></td>
+        <td>
+            <form action="/customers/remove_from_employer/<%= customer.getId() %>?employerId=<%= employer.getId() %>" method="POST"
+                  onsubmit="return confirm('Ви впевнені, що хочете видалити клієнта з цього роботодавця?')">
+                <button type="submit" style="color: darkorange;">Видалити з цієї компанії</button>
+            </form>
+        </td>
+    </tr>
+    <% } %>
+</table>
+<%
+} else {
+%>
+<p>Цей клієнт не має роботодавця.</p>
+<%
+    }
+%>
+
+<h3>Видалити клієнта</h3>
 <form action="/customers/delete/<%= customer.getId() %>" method="POST"
       onsubmit="return confirm('Ви впевнені, що хочете видалити цього клієнта?')">
     <button type="submit" style="color: red;">Видалити клієнта</button>
 </form>
-
-
 <%
     }
 %>
@@ -127,5 +171,4 @@
 
 </body>
 </html>
-
 
