@@ -1,6 +1,7 @@
 package com.example.SpringWeb.model;
 
 
+import jakarta.persistence.*;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
@@ -8,15 +9,31 @@ import java.util.List;
 import java.util.Objects;
 
 @Component
-public class Customer {
+@Entity
+@Table(name = "customers")
+public class Customer extends AbstractEntity {
 
-private long id;
-private String name;
-private String surname;
-private String email;
-private int age;
-private List<Account> accounts;
+    @Column(nullable = false, length = 100)
+    private String name;
+
+    @Column(nullable = false, length = 100)
+    private String surname;
+
+    @Column(nullable = false, length = 150, unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private int age;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Account> accounts;
+
+    @ManyToMany(mappedBy = "customers")
+    private List<Employer> employers; //
     public Customer() {
+    }
+    public Customer(long id){
+        this.id = id;
     }
     public Customer(String name,String surname,String email,int age) {
         this.name = name;
@@ -46,14 +63,6 @@ private List<Account> accounts;
         this.accounts = accounts;
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
     }
@@ -76,6 +85,12 @@ private List<Account> accounts;
 
     public void setEmail(String email) {
         this.email = email;
+    }
+    public List<Employer> getEmployers() {
+        return employers;
+    }
+    public void setEmployers(List<Employer> employers) {
+        this.employers = employers;
     }
 
     @Override

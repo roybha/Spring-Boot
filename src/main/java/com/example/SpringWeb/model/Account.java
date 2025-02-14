@@ -1,39 +1,45 @@
 package com.example.SpringWeb.model;
-import org.springframework.lang.NonNull;
+import com.example.SpringWeb.converter.CurrencyConverter;
+import jakarta.persistence.*;
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
 
 @Component
-public class Account{
-    private Long id;
+@Entity
+@Table(name = "accounts")
+public class Account extends AbstractEntity {
+
+    @Column(name = "account_number", unique = true, nullable = false, length = 50)
     private String accountNumber;
+
+    @Convert(converter = CurrencyConverter.class) // Якщо `Currency` — це `enum`, інакше треба `@ManyToOne`
+    @Column(nullable = false)
     private Currency currency;
+
+    @Column(nullable = false)
     private double balance;
-    private Long customer;
+
+    @ManyToOne // Багато рахунків можуть належати одному клієнту
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
+
     public Account() {
 
     }
-    public Account(Currency currency, Long customer) {
+    public Account(Currency currency, Customer customer) {
         this.currency = currency;
         this.customer = customer;
     }
-    public Account(Currency currency, double balance, Long customer) {
-        this.currency = currency;
-        this.balance = balance;
-        this.customer = customer;
-    }
-    public Account(long id, Currency currency, double balance, Long customer) {
-        this.id = id;
+    public Account(Currency currency, double balance, Customer customer) {
         this.currency = currency;
         this.balance = balance;
         this.customer = customer;
     }
-    public Long getId() {
-        return id;
-    }
-    public void setId(Long id) {
-        this.id = id;
+    public Account(long id, Currency currency, double balance, Customer customer) {
+        this.setId(id);
+        this.currency = currency;
+        this.balance = balance;
+        this.customer = customer;
     }
     public Currency getCurrency() {
         return currency;
@@ -47,10 +53,10 @@ public class Account{
     public void setBalance(double balance) {
         this.balance = balance;
     }
-    public Long getCustomer() {
+    public Customer getCustomer() {
         return customer;
     }
-    public void setCustomer(Long customer) {
+    public void setCustomer(Customer customer) {
         this.customer = customer;
     }
     public String getAccountNumber() {
