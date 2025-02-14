@@ -10,6 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class MenuController {
     @GetMapping("menu")
     public String mainMenu(Model model) {
-        return "menu";
+        return "menu_page";
     }
 }

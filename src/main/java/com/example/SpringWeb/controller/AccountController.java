@@ -2,6 +2,7 @@ package com.example.SpringWeb.controller;
 
 import com.example.SpringWeb.model.Account;
 import com.example.SpringWeb.model.Currency;
+import com.example.SpringWeb.model.Customer;
 import com.example.SpringWeb.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -25,7 +26,8 @@ public class AccountController {
                            @RequestParam(name = "currency") Currency currency,
                            @RequestParam(name = "customerId") long customerId,
                            Model model) {
-        Account account = new Account(currency, balance, customerId);
+        Account account = new Account(currency, balance, new Customer(customerId));
+        account.setAccountNumber(AccountService.generateAccountNumber());
         if(accountService.save(account)){
             return "redirect:/customers/change?id=" + customerId;
         }else {
@@ -37,7 +39,7 @@ public class AccountController {
     public String deleteAccount(@RequestParam(name = "accountNumber") String accountNumber, Model model) {
         Optional<Account> account = accountService.findByAccountNumber(accountNumber);
         if(account.isPresent()){
-            long customerId = account.get().getCustomer();
+            long customerId = account.get().getCustomer().getId();
             accountService.deleteById(account.get().getId());
             return "redirect:/customers/change?id=" + customerId;
         }
