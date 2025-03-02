@@ -133,6 +133,38 @@ public class EmployerController {
         }
         return "edit-employer";
     }
+    @PostMapping("/update/{id}")
+    public String updateEmployer(@PathVariable Long id,
+                                 @ModelAttribute EmployerRequest employerRequest,
+                                 BindingResult bindingResult,
+                                 RedirectAttributes redirectAttributes) {
+        try {
+            Optional<Employer> maybeEmployer = employerService.findById(id);
+
+            if (maybeEmployer.isPresent()) {
+                Employer employer = maybeEmployer.get();
+                if(bindingResult.hasFieldErrors("name")) {
+                    redirectAttributes.addAttribute("error",bindingResult.getFieldError().getDefaultMessage());
+                    return "redirect:/employers/change?employerName=" + employer.getName();
+                }
+                employer.setName(employerRequest.getName());
+               if(bindingResult.hasFieldErrors("address")) {
+                   redirectAttributes.addFlashAttribute("error",bindingResult.getFieldError().getDefaultMessage());
+                   return "redirect:/employers/change?employerName=" + employer.getName();
+               }
+                employer.setAddress(employerRequest.getAddress());
+
+                employerService.save(employer);
+                redirectAttributes.addFlashAttribute("success", "Компанію успішно оновлено!");
+            } else {
+                redirectAttributes.addFlashAttribute("error", "Компанію з таким ID не знайдено.");
+            }
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Помилка при оновленні компанії.");
+        }
+
+        return "redirect:/employers/change?employerName=" + employerRequest.getName();
+    }
     @PostMapping("/deleteEmployer/{name}")
     public String deleteEmployer(@PathVariable(name = "name") String employerName, RedirectAttributes redirectAttributes) {
         try {
