@@ -1,4 +1,5 @@
 <%@ page import="java.util.List" %>
+<%@ page import="com.example.SpringWeb.DTO.TransferRequest" %>
 <%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="uk">
@@ -40,7 +41,7 @@
     <label for="amount">Сума:</label>
     <input type="number" id="amount" name="amount" required min="0.01" step="0.01"><br><br>
     <label for="currency">Валюта:</label>
-    <select id="currency" name="currency" required>
+    <select  id="currency" name="currency" required>
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="UAH">UAH</option>

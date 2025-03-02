@@ -1,5 +1,9 @@
 package com.example.SpringWeb.model;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@AllArgsConstructor
+@Getter
 public enum Currency {
     EUR(1.0,"EUR"),
     USD(1.18,"USD"),
@@ -9,12 +13,6 @@ public enum Currency {
 
     private final double rateToEUR;
     private final String name;// Курс до EUR
-
-    Currency(double rateToEUR,String name) {
-        this.rateToEUR = rateToEUR;
-        this.name = name;
-
-    }
 
     // Метод для конвертації з будь-якої валюти до EUR
     public double toEUR(double value) {

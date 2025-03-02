@@ -1,6 +1,6 @@
-<%@ page import="com.example.SpringWeb.model.Employer" %>
+<%@ page import="com.example.SpringWeb.DTO.EmployerResponse" %>
 <%@ page import="java.util.List" %>
-<%@ page import="com.example.SpringWeb.model.Account" %>
+<%@ page import="com.example.SpringWeb.DTO.AccountResponse" %>
 <%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="uk">
@@ -32,7 +32,7 @@
 </c:if>
 
 <%
-    List<Employer> employers = (List<Employer>) request.getAttribute("employers");
+    List<EmployerResponse> employers = (List<EmployerResponse>) request.getAttribute("employers");
     if (employers != null && !employers.isEmpty()) {
 %>
 <h3>Компанії, на які працює клієнт</h3>
@@ -43,7 +43,7 @@
         <th>Адреса</th>
     </tr>
     <%
-        for (Employer employer : employers) {
+        for (EmployerResponse employer : employers) {
     %>
     <tr>
         <td><%= employer.getId() %></td>
@@ -61,7 +61,7 @@
 %>
 
 <%
-    List<Account> accounts = (List<Account>) request.getAttribute("accounts");
+    List<AccountResponse> accounts = (List<AccountResponse>) request.getAttribute("accounts");
     if (accounts != null && !accounts.isEmpty()) {
 %>
 <h3>Рахунки клієнта</h3>
@@ -72,7 +72,7 @@
         <th>Валюта</th>
     </tr>
     <%
-        for (Account account : accounts) {
+        for (AccountResponse account : accounts) {
     %>
     <tr>
         <td><%= account.getAccountNumber() %></td>

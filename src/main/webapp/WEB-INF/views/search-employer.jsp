@@ -1,5 +1,5 @@
-<%@ page import="com.example.SpringWeb.model.Employer" %>
-<%@ page import="com.example.SpringWeb.model.Customer" %>
+<%@ page import="com.example.SpringWeb.DTO.EmployerResponse" %>
+<%@ page import="com.example.SpringWeb.DTO.CustomerResponse" %>
 <%@ page import="java.util.List" %>
 <%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
@@ -28,7 +28,7 @@
     <p><strong>Назва:</strong> ${employer.name}</p>
     <p><strong>Адреса:</strong> ${employer.address}</p>
     <%
-        List<Customer> customers = (List<Customer>) request.getAttribute("customers");
+        List<CustomerResponse> customers = (List<CustomerResponse>) request.getAttribute("customers");
         if (customers != null && !customers.isEmpty()) {
     %>
     <h3>Список клієнтів компанії</h3>
@@ -41,7 +41,7 @@
             <th>Вік</th>
         </tr>
         <%
-            for (Customer customer : customers) {
+            for (CustomerResponse customer : customers) {
         %>
         <tr>
             <td><%=customer.getId()%></td>

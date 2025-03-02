@@ -34,8 +34,8 @@
     <label for="accountNumber">Номер рахунку:</label>
     <input type="text" id="accountNumber" name="accountNumber" required><br><br>
 
-    <label for="amount">Сума:</label>
-    <input type="number" id="amount" name="amount" required min="0.01" step="0.01"><br><br>
+    <label for="balance">Сума:</label>
+    <input type="number" id="balance" name="balance" required min="0.01" step="0.01"><br><br>
 
     <button type="submit">Зняти гроші</button>
 </form>

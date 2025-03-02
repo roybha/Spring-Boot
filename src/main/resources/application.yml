@@ -12,6 +12,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        javax.persistence.validation.mode: auto
   profiles:
     active: local  # ?? ????????????? - local
 

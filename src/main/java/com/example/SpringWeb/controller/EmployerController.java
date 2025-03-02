@@ -1,19 +1,32 @@
 package com.example.SpringWeb.controller;
+import com.example.SpringWeb.DTO.CustomerResponse;
+import com.example.SpringWeb.DTO.Customer_EmployerRequest;
+import com.example.SpringWeb.DTO.EmployerRequest;
+import com.example.SpringWeb.DTO.EmployerResponse;
+import com.example.SpringWeb.facade.CustomerFacade;
+import com.example.SpringWeb.facade.EmployerFacade;
 import com.example.SpringWeb.model.Customer;
 import com.example.SpringWeb.model.Customer_Employer;
 import com.example.SpringWeb.model.Employer;
 import com.example.SpringWeb.service.CustomerService;
 import com.example.SpringWeb.service.Customer_EmployerService;
 import com.example.SpringWeb.service.EmployerService;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/employers")
@@ -21,23 +34,32 @@ public class EmployerController {
     private final EmployerService employerService;
     private final Customer_EmployerService ceService;
     private final CustomerService customerService;
+    private final EmployerFacade employerFacade;
+    private final CustomerFacade customerFacade;
     @Autowired
-    public EmployerController(EmployerService employerService, Customer_EmployerService ceService, CustomerService customerService) {
+    public EmployerController(EmployerService employerService, Customer_EmployerService ceService,
+                              CustomerService customerService,EmployerFacade employerFacade,CustomerFacade customerFacade) {
         this.employerService = employerService;
         this.ceService = ceService;
         this.customerService = customerService;
+        this.employerFacade = employerFacade;
+        this.customerFacade = customerFacade;
     }
     @PostMapping("/addEmployer")
     public String addEmployer(
-                              @RequestParam(name = "name") String name,
-                              @RequestParam(name = "address") String address,
-                              RedirectAttributes redirectAttributes) {
+            @ModelAttribute @Validated EmployerRequest employerRequest,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes) {
         try {
-            Optional<Employer> maybeExist = employerService.findByNameAndAddress(name, address);
+            if (bindingResult.hasErrors()) {
+                redirectAttributes.addFlashAttribute("error", bindingResult.getFieldError().getDefaultMessage());
+                return "redirect:/employers/create";
+            }
+            Optional<Employer> maybeExist = employerService.findByNameAndAddress(employerRequest.getName(), employerRequest.getAddress());
             if (maybeExist.isPresent()) {
                 redirectAttributes.addFlashAttribute("error", "Компанія вже інсує.");
             }else{
-               Employer newEmployer = new Employer(name, address);
+               Employer newEmployer = new Employer(employerRequest.getName(), employerRequest.getAddress());
                 employerService.save(newEmployer);
                 redirectAttributes.addFlashAttribute("success", "Компанія додана успішно");
             }
@@ -51,50 +73,60 @@ public class EmployerController {
         return "create-employer";
     }
     @PostMapping("/addCustomer")
-    public String addCustomerToEmployer(@RequestParam(name = "employerName") String employerName,
-                                        @RequestParam(name = "customerId") String customerId,
-                                        RedirectAttributes redirectAttributes) {
+    public String addCustomerToEmployer(@ModelAttribute @Validated Customer_EmployerRequest customerEmployerRequest,
+                                        BindingResult bindingResult,
+                                        RedirectAttributes redirectAttributes,
+                                        Model model) {
         try {
-            if( employerName != null && !employerName.isEmpty()) {
-                Optional<Employer> maybeEmployer = employerService.findByEmployerName(employerName);
+            if(!bindingResult.hasErrors() ) {
+                Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerEmployerRequest.getEmployerName());
                 if(maybeEmployer.isPresent()){
-                    Long ceId = Long.parseLong(customerId);
-                    if(ceId != null && ceId > 0) {
-                        Optional<Customer> maybeCustomer = customerService.findById(ceId);
+                        Optional<Customer> maybeCustomer = customerService.findById(customerEmployerRequest.getCustomerId());
                         if (maybeCustomer.isPresent()) {
-                            if(!ceService.findCustomersByEmployerId(maybeEmployer.get().getId()).isEmpty()) {
-                                redirectAttributes.addFlashAttribute("error","Клієнт вже присутній у даній компанії");
+                            if (ceService.findCustomersByEmployerId(maybeEmployer.get().getId())
+                                    .stream()
+                                    .anyMatch(customer -> customer.getId().equals(customerEmployerRequest.getCustomerId()))) {
+                                redirectAttributes.addAttribute("error","Клієнт вже присутній у даній компанії");
                             }
                             else {
-                                redirectAttributes.addFlashAttribute("success","Клієнта успішно додано до компанії");
+                                redirectAttributes.addAttribute("success","Клієнта успішно додано до компанії");
                                 ceService.save(new Customer_Employer(maybeEmployer.get(), maybeCustomer.get()));
                             }
                         }
                         else
-                            redirectAttributes.addFlashAttribute("error","Не знайдено клієнта з Id: "+ ceId);
-                    }
+                            redirectAttributes.addAttribute("error","Не знайдено клієнта з Id: "+ customerEmployerRequest.getCustomerId());
+                }
+                else{
+                    redirectAttributes.addAttribute("error","Не знайдено компанію з ім'ям "+customerEmployerRequest.getEmployerName());
                 }
             }
             else
-                redirectAttributes.addFlashAttribute("error","Не знайдено компанію з ім'ям: "+ employerName);
+                redirectAttributes.addAttribute("error",bindingResult.getFieldError().getDefaultMessage());
 
         }catch (DataAccessException e){
             redirectAttributes.addFlashAttribute("error","помилка доступу до БД");
         }
-        return "redirect:/employers/change?name=" + employerName;
+        return "redirect:/employers/change?employerName=" + customerEmployerRequest.getEmployerName();
     }
     @GetMapping("/change")
-    public String showChangeForm(@RequestParam(name = "name",required = false)String employerName,Model model) {
+    public String showChangeForm(@ModelAttribute Customer_EmployerRequest customerEmployerRequest,
+                                 RedirectAttributes redirectAttributes,
+                                 Model model) {
         try {
-            if(employerName != null) {
-                Optional<Employer> maybeEmployer = employerService.findByEmployerName(employerName);
+            if(customerEmployerRequest.getEmployerName() != null) {
+                Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerEmployerRequest.getEmployerName());
+
                 if(maybeEmployer.isPresent()) {
-                    model.addAttribute("employer", maybeEmployer.get());
-                    Optional<List<Customer>> maybeCustomers = Optional.of(ceService.findCustomersByEmployerId(maybeEmployer.get().getId()));
-                    maybeCustomers.ifPresent(customers -> model.addAttribute("customers", customers));
+                    model.addAttribute("employer", employerFacade.getEmployerResponseByEmployer(maybeEmployer.get()));
+                    List<Customer> customers = ceService.findCustomersByEmployerId(maybeEmployer.get().getId());
+                    List<CustomerResponse> customerResponses = customers.stream()
+                            .map(customerFacade::getCustomerResponseByCustomer)
+                            .collect(Collectors.toList());
+
+                    model.addAttribute("customers", customerResponses);
                 }
                 else
-                    model.addAttribute("error","Не знайдено компанію з  назвою: "+ employerName);
+                    model.addAttribute("error","Не знайдено компанію з  назвою: "+ customerEmployerRequest.getEmployerName());
             }
         }catch (Exception e) {
             model.addAttribute("error","Помилка доступу до БД");
@@ -116,48 +148,66 @@ public class EmployerController {
         return "redirect:/employers/change";
     }
     @PostMapping("/deleteCustomer")
-    public String deleteCustomer(@RequestParam(name = "customerId") Long customerId,
-                                 @RequestParam(name = "employerName") String employerName,
+    public String deleteCustomer(@ModelAttribute Customer_EmployerRequest customerEmployerRequest,
                                  RedirectAttributes redirectAttributes) {
         try {
-            Optional<Employer> maybeEmployer = employerService.findByEmployerName(employerName);
+            Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerEmployerRequest.getEmployerName());
             if(maybeEmployer.isPresent()) {
-                Optional<Customer> maybeCustomer = customerService.findById(customerId);
+                Optional<Customer> maybeCustomer = customerService.findById(customerEmployerRequest.getCustomerId());
                 if(maybeCustomer.isPresent()) {
                     ceService.deleteByCustomerId(maybeCustomer.get().getId());
-                    redirectAttributes.addFlashAttribute("success","Клієнта з Id "+customerId +" успішно видаленно з компанії  "+employerName);
+                    redirectAttributes.addAttribute("success","Клієнта з Id "+customerEmployerRequest.getCustomerId() +" успішно видаленно з компанії  "+customerEmployerRequest.getEmployerName());
                 }
                 else{
-                    redirectAttributes.addFlashAttribute("error","Не знайдено клієнта з Id: "+ customerId);
+                    redirectAttributes.addAttribute("error","Не знайдено клієнта з Id: "+ customerEmployerRequest.getCustomerId());
                 }
             }
             else
-                redirectAttributes.addFlashAttribute("error","Не знайдено компанію з іменем: "+ employerName);
+                redirectAttributes.addAttribute("error","Не знайдено компанію з іменем: "+ customerEmployerRequest.getEmployerName());
         }catch (DataAccessException e){
             redirectAttributes.addFlashAttribute("error","Помилка доступу до БД");
         }
-        return "redirect:/employers/change?name=" + employerName;
+        return "redirect:/employers/change?employerName=" + customerEmployerRequest.getEmployerName();
     }
     @GetMapping("/find")
-    public String findEmployer(@RequestParam(name = "employerName",required = false) String employerName,
+    public String findEmployer(@ModelAttribute Customer_EmployerRequest customerEmployerRequest,
                                Model model) {
-        if(employerName != null) {
-            Optional<Employer> maybeEmployer = employerService.findByEmployerName(employerName);
+        if(customerEmployerRequest != null) {
+            Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerEmployerRequest.getEmployerName());
             if(maybeEmployer.isPresent()) {
-                 model.addAttribute("employer", maybeEmployer.get());
-                 Optional<List<Customer>>maybeCustomers = Optional.of(ceService.findCustomersByEmployerId(maybeEmployer.get().getId()));
-                 maybeCustomers.ifPresent(customers -> model.addAttribute("customers", customers));
+                 model.addAttribute("employer", employerFacade.getEmployerResponseByEmployer(maybeEmployer.get()));
+                List<Customer> customers = ceService.findCustomersByEmployerId(maybeEmployer.get().getId());
+                List<CustomerResponse> customerResponses = customers.stream()
+                        .map(customerFacade::getCustomerResponseByCustomer)
+                        .collect(Collectors.toList());
+
+                model.addAttribute("customers", customerResponses);
+            }else if(customerEmployerRequest.getEmployerName()!=null) {
+                model.addAttribute("error","Не знайдено компанію з назвою: "+ customerEmployerRequest.getEmployerName());
             }
-            else {
-                model.addAttribute("error","Не знайдено компанію з назвою: "+ employerName);
-            }
+
         }
         return "search-employer";
     }
     @GetMapping("/all")
-    public String allEmployers(Model model) {
-        model.addAttribute("employers", employerService.findAll());
+    public String allEmployers(@RequestParam(defaultValue = "1") int page,
+                               @RequestParam(defaultValue = "10") int size,
+                               Model model) {
+        Pageable pageable = PageRequest.of(page - 1, size);
+        Page<Employer> employerPage = employerService.findAll(pageable);
+
+        List<EmployerResponse> employers = employerPage.getContent().stream()
+                .map(employerFacade::getEmployerResponseByEmployer)
+                .collect(Collectors.toList());
+
+        model.addAttribute("employers", employers);
+        model.addAttribute("currentPage", employerPage.getNumber() + 1); // Додаємо 1, щоб сторінки були зручні
+        model.addAttribute("totalPages", employerPage.getTotalPages());
+        model.addAttribute("totalEmployers", employerPage.getTotalElements());
+        model.addAttribute("size", size);
+
         return "employers";
     }
+
 
 }

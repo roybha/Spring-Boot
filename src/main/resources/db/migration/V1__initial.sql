@@ -10,7 +10,11 @@ CREATE TABLE customers (
                            name VARCHAR(100) NOT NULL,
                            surname VARCHAR(100) NOT NULL,
                            email VARCHAR(150) UNIQUE NOT NULL,
-                           age INT CHECK (age >= 18)
+                           phone_number VARCHAR(15) UNIQUE NOT NULL CHECK (phone_number ~ '^\+?[0-9]{10,15}$'),
+                           age INT CHECK (age >= 18),
+                           password VARCHAR(100) NOT NULL CHECK (LENGTH(password) >= 8),
+                           created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                           last_modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Створення таблиці accounts
@@ -20,6 +24,8 @@ CREATE TABLE accounts (
                           currency VARCHAR(3) NOT NULL CHECK (currency IN ('USD', 'EUR', 'UAH', 'CHF', 'GBP')),
                           balance DOUBLE PRECISION CHECK (balance >= 0),
                           customer_id INT,
+                          created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                          last_modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                           FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
 );
 
@@ -27,14 +33,19 @@ CREATE TABLE accounts (
 CREATE TABLE employers (
                            id SERIAL PRIMARY KEY,
                            name VARCHAR(255) NOT NULL UNIQUE,
-                           address VARCHAR(255) NOT NULL
+                           address VARCHAR(255) NOT NULL,
+                           created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                           last_modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Створення проміжної таблиці для зв’язку "багато-до-багатьох"
 CREATE TABLE customer_employer (
                                    customer_id INT NOT NULL,
                                    employer_id INT NOT NULL,
+                                   created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                   last_modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                    PRIMARY KEY (customer_id, employer_id),
                                    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
                                    FOREIGN KEY (employer_id) REFERENCES employers(id) ON DELETE CASCADE
 );
+

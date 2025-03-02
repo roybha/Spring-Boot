@@ -1,6 +1,10 @@
 package com.example.SpringWeb.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -8,27 +12,18 @@ import java.util.List;
 @Component
 @Entity
 @Table(name = "employers")
+@Data // Автоматично генерує гетери, сетери, toString(), equals(), hashCode() для всіх полів
+@NoArgsConstructor // Генерує конструктор без аргументів
+@AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class Employer extends AbstractEntity {
-    public Employer() {
-
-    }
-    public Employer(Long id, String name, String address) {
-        this.id = id;
-        this.name = name;
-        this.address = address;
-    }
-    public Employer(String name, String address) {
-        this.name = name;
-        this.address = address;
-    }
-    public Employer(Long id){
-        this.id = id;
-    }
 
     @Column(unique = true, nullable = false)
-    String name;
-    @Column( nullable = false)
-    String address;
+    private String name;
+
+    @Column(nullable = false)
+    private String address;
+
     @ManyToMany
     @JoinTable(
             name = "customer_employer",
@@ -36,24 +31,8 @@ public class Employer extends AbstractEntity {
             inverseJoinColumns = @JoinColumn(name = "customer_id")
     )
     private List<Customer> customers;
-
-    public String getName() {
-        return name;
-    }
-    public void setName(String name) {
+    public Employer(String name, String address) {
         this.name = name;
-    }
-    public String getAddress() {
-        return address;
-    }
-    public void setAddress(String address) {
         this.address = address;
     }
-    public List<Customer> getCustomers() {
-        return customers;
-    }
-    public void setCustomers(List<Customer> customers) {
-        this.customers = customers;
-    }
-
 }

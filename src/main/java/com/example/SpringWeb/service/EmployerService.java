@@ -5,6 +5,8 @@ import com.example.SpringWeb.model.Employer;
 import com.example.SpringWeb.repository.EmployerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,5 +79,8 @@ public class EmployerService implements EmployerDAO {
     }
     public Optional<Employer> findByEmployerName(String employerName) {
         return employerRepository.findByName(employerName);
+    }
+    public Page<Employer> findAll(Pageable pageable) {
+        return employerRepository.findAll(pageable);
     }
 }

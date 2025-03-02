@@ -1,14 +1,50 @@
+INSERT INTO employers (name, address, created_date, last_modified_date) VALUES
+                                                                            ('Group Privat', 'Dnipro', now(), now()),
+                                                                            ('Intercontinental & Co', 'Dnipro', now(), now()),
+                                                                            ('Tech Solutions', 'Kyiv', now(), now()),
+                                                                            ('SoftServe', 'Lviv', now(), now()),
+                                                                            ('GlobalLogic', 'Kyiv', now(), now()),
+                                                                            ('EPAM Systems', 'Lviv', now(), now()),
+                                                                            ('Luxoft', 'Odesa', now(), now()),
+                                                                            ('Ciklum', 'Kharkiv', now(), now()),
+                                                                            ('ELEKS', 'Lviv', now(), now()),
+                                                                            ('DataArt', 'Dnipro', now(), now()),
+                                                                            ('NIX Solutions', 'Kharkiv', now(), now()),
+                                                                            ('Infopulse', 'Kyiv', now(), now()),
+                                                                            ('Genesis', 'Kyiv', now(), now()),
+                                                                            ('Intellias', 'Lviv', now(), now()),
+                                                                            ('Avenga', 'Dnipro', now(), now());
 
+INSERT INTO customers (name, surname, email, age, password, phone_number, created_date, last_modified_date) VALUES
+                                                                                                                ('Dmytro', 'Danylchenko', 'dmytro.dan@example.com', 25, 'somePass123', '+380958548392', now(), now()),
+                                                                                                                ('Olexiy', 'Serhienko', 'alex.serhienko@gmail.com', 30, 'anotherPass456', '+380953271119', now(), now()),
+                                                                                                                ('Maria', 'Koval', 'maria.koval@example.com', 27, 'passMaria789', '+380962314567', now(), now()),
+                                                                                                                ('Andriy', 'Petrenko', 'andriy.petrenko@example.com', 35, 'andriyPass321', '+380503216547', now(), now()),
+                                                                                                                ('Svitlana', 'Shevchenko', 'svitlana.shev@example.com', 29, 'svetaPass654', '+380971231234', now(), now()),
+                                                                                                                ('Ihor', 'Bondarenko', 'ihor.bond@example.com', 40, 'ihorSecure!23', '+380931234567', now(), now()),
+                                                                                                                ('Nadiya', 'Tymoshenko', 'nadiya.tymo@example.com', 31, 'nadiyaLove456', '+380992345678', now(), now()),
+                                                                                                                ('Vladyslav', 'Romanenko', 'vlad.rom@example.com', 33, 'vladKing789', '+380953456789', now(), now()),
+                                                                                                                ('Yulia', 'Marchenko', 'yulia.march@example.com', 28, 'yuliaM@2023', '+380964567890', now(), now()),
+                                                                                                                ('Oleg', 'Kryvonos', 'oleg.kryvo@example.com', 36, 'olegSuperPass', '+380975678901', now(), now()),
+                                                                                                                ('Anastasia', 'Doroshenko', 'ana.doroshenko@example.com', 26, 'anastas!A321', '+380986789012', now(), now()),
+                                                                                                                ('Maksym', 'Lytvyn', 'maks.litvyn@example.com', 32, 'maksymPro!123', '+380997890123', now(), now()),
+                                                                                                                ('Kateryna', 'Zhuk', 'kateryna.zhuk@example.com', 34, 'katZhuk777', '+380908901234', now(), now()),
+                                                                                                                ('Oleksandr', 'Ivanchuk', 'olex.ivanchuk@example.com', 29, 'sashaIv123', '+380919012345', now(), now()),
+                                                                                                                ('Diana', 'Melnyk', 'diana.melnyk@example.com', 30, 'dianaSecure123', '+380929123456', now(), now());
 
-INSERT INTO employers (name, address) VALUES
-                                          ('Група Приват', 'Дніпро'),
-                                          ('Інтерконтіненталь & Co', 'Дніпро');
-
-INSERT INTO customers (name, surname, email, age) VALUES
-                                                      ('Дмитро', 'Данильченко', 'dmytro.dan@example.com', 25),
-                                                      ('Олексій', 'Сергієнко', 'alex.serhienko@gmail.com', 30);
-
-
-INSERT INTO customer_employer (customer_id, employer_id) VALUES
-                                                             (1, 1),
-                                                             (2, 2);
+INSERT INTO customer_employer (customer_id, employer_id, created_date, last_modified_date) VALUES
+                                                                                               (1, 1, now(), now()),
+                                                                                               (2, 2, now(), now()),
+                                                                                               (3, 3, now(), now()),
+                                                                                               (4, 4, now(), now()),
+                                                                                               (5, 5, now(), now()),
+                                                                                               (6, 6, now(), now()),
+                                                                                               (7, 7, now(), now()),
+                                                                                               (8, 8, now(), now()),
+                                                                                               (9, 9, now(), now()),
+                                                                                               (10, 10, now(), now()),
+                                                                                               (11, 11, now(), now()),
+                                                                                               (12, 12, now(), now()),
+                                                                                               (13, 13, now(), now()),
+                                                                                               (14, 14, now(), now()),
+                                                                                               (15, 15, now(), now());

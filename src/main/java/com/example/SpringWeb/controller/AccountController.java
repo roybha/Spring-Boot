@@ -1,43 +1,58 @@
 package com.example.SpringWeb.controller;
-
+import com.example.SpringWeb.DTO.AccountRequest;
+import com.example.SpringWeb.DTO.TransferRequest;
+import com.example.SpringWeb.facade.AccountFacade;
 import com.example.SpringWeb.model.Account;
 import com.example.SpringWeb.model.Currency;
-import com.example.SpringWeb.model.Customer;
 import com.example.SpringWeb.service.AccountService;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import java.util.Optional;
 
 @Controller
 @RequestMapping("/accounts")
 public class AccountController {
     private final AccountService accountService;
+    private final AccountFacade accountFacade;
     @Autowired
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, AccountFacade accountFacade) {
         this.accountService = accountService;
+        this.accountFacade = accountFacade;
+
+    }
+    @GetMapping("/error")
+    public String error() {
+        return "error";
     }
     @PostMapping("/create")
-    public String accounts(@RequestParam(name = "balance") double balance,
-                           @RequestParam(name = "currency") Currency currency,
-                           @RequestParam(name = "customerId") long customerId,
-                           Model model) {
-        Account account = new Account(currency, balance, new Customer(customerId));
-        account.setAccountNumber(AccountService.generateAccountNumber());
-        if(accountService.save(account)){
-            return "redirect:/customers/change?id=" + customerId;
-        }else {
-            model.addAttribute("message", "Не вдалося зберегти акаунт");
-            return "error";
+    public String accounts(@ModelAttribute @Validated AccountRequest accountRequest, BindingResult result, RedirectAttributes redirectAttributes) {
+        if (result.hasFieldErrors("balance")) {
+            redirectAttributes.addFlashAttribute("error", result.getFieldError("balance").getDefaultMessage());
+            return "redirect:/customers/change?id=" + accountRequest.getCustomerId();
+        }
+        accountRequest.setAccountNumber(AccountService.generateAccountNumber());
+        try {
+            if(accountService.save(accountFacade.getAccountByAccountRequest(accountRequest)))
+              return "redirect:/customers/change?id=" + accountRequest.getCustomerId();
+            throw new Exception();
+        }catch (Exception e) {
+            redirectAttributes.addAttribute("message", "Помилка збереження рахунку");
+            return "redirect:/accounts/error";
         }
     }
+
+
+
     @PostMapping("/delete")
-    public String deleteAccount(@RequestParam(name = "accountNumber") String accountNumber, Model model) {
-        Optional<Account> account = accountService.findByAccountNumber(accountNumber);
+    public String deleteAccount(@ModelAttribute AccountRequest accountRequest, Model model) {
+        Optional<Account> account = accountService.findByAccountNumber(accountRequest.getAccountNumber());
         if(account.isPresent()){
             long customerId = account.get().getCustomer().getId();
             accountService.deleteById(account.get().getId());
@@ -57,14 +72,19 @@ public class AccountController {
         return "deposit";
     }
     @PostMapping("/deposit")
-    public String deposit(@RequestParam(name = "amount") double amount,
-                          @RequestParam(name = "accountNumber") String accountNumber,
+    public String deposit(
+                          @ModelAttribute  AccountRequest accountRequest,
+                          BindingResult result,
                           RedirectAttributes redirectAttributes) {
+        if(result.hasFieldErrors("balance")) {
+            redirectAttributes.addFlashAttribute("error", result.getFieldError("balance").getDefaultMessage());
+            return "redirect:/accounts/deposit";
+        }
         try {
-            Optional<Account> maybeAccount = accountService.findByAccountNumber(accountNumber);
+            Optional<Account> maybeAccount = accountService.findByAccountNumber(accountRequest.getAccountNumber());
             if (maybeAccount.isPresent()) {
                 Account account = maybeAccount.get();
-                account.setBalance(account.getBalance() + amount);
+                account.setBalance(account.getBalance() + accountRequest.getBalance());
                 accountService.save(account);
                 redirectAttributes.addFlashAttribute("success", "Рахунок поповнено");
             } else {
@@ -80,22 +100,24 @@ public class AccountController {
         return "transfer";
     }
     @PostMapping("/transfer")
-    public String transfer(@RequestParam(name = "fromAccountNumber") String fromAccountNumber,
-                           @RequestParam(name = "toAccountNumber") String toAccountNumber,
-                           @RequestParam(name = "amount") double amount,
-                           @RequestParam(name = "currency") Currency currency,
+    public String transfer(@ModelAttribute @Validated TransferRequest transferRequest,
+                           BindingResult result,
                            RedirectAttributes redirectAttributes) {
         try {
-            Optional<Account> maybeFromAccount = accountService.findByAccountNumber(fromAccountNumber);
-            Optional<Account> maybeToAccount = accountService.findByAccountNumber(toAccountNumber);
+            if(result.hasErrors()) {
+                redirectAttributes.addFlashAttribute("error", result.getFieldError().getDefaultMessage());
+                return "redirect:/accounts/transfer";
+            }
+            Optional<Account> maybeFromAccount = accountService.findByAccountNumber(transferRequest.getFromAccountNumber());
+            Optional<Account> maybeToAccount = accountService.findByAccountNumber(transferRequest.getToAccountNumber());
             if (maybeFromAccount.isPresent() && maybeToAccount.isPresent()) {
                 Account fromAccount = maybeFromAccount.get();
                 Account toAccount = maybeToAccount.get();
-                double convertedSum = Currency.convertTo(fromAccount.getCurrency(),currency,fromAccount.getBalance());
-                if(convertedSum >= amount){
-                    fromAccount.setBalance(fromAccount.getBalance() - Currency.convertTo(currency,fromAccount.getCurrency(),amount));
+                double convertedSum = Currency.convertTo(fromAccount.getCurrency(),Currency.getFromName(transferRequest.getCurrency()),fromAccount.getBalance());
+                if(convertedSum >= transferRequest.getAmount()){
+                    fromAccount.setBalance(fromAccount.getBalance() - Currency.convertTo(Currency.getFromName(transferRequest.getCurrency()),fromAccount.getCurrency(),transferRequest.getAmount()));
                     accountService.save(fromAccount);
-                    toAccount.setBalance(toAccount.getBalance() +Currency.convertTo(currency,toAccount.getCurrency(),amount));
+                    toAccount.setBalance(toAccount.getBalance() +Currency.convertTo(Currency.getFromName(transferRequest.getCurrency()),toAccount.getCurrency(),transferRequest.getAmount()));
                     accountService.save(toAccount);
                     redirectAttributes.addFlashAttribute("success","Переказ грошей здійснено успішно");
                 }else{
@@ -117,23 +139,28 @@ public class AccountController {
         }
         return "redirect:/accounts/transfer";
     }
+
     @GetMapping("/withdraw")
     public String withdraw(Model model) {
         return "withdraw";
     }
     @PostMapping("/withdraw")
-    public String withdraw(@RequestParam(name = "accountNumber") String accountNumber,
-                           @RequestParam(name = "amount") double amout,
+    public String withdraw(@ModelAttribute  AccountRequest accountRequest,
+                           BindingResult bindingResult,
                            RedirectAttributes redirectAttributes) {
         try{
-            Optional<Account> maybeAccount = accountService.findByAccountNumber(accountNumber);
+            if (bindingResult.hasFieldErrors("balance") || bindingResult.hasFieldErrors("accountNumber")) {
+                redirectAttributes.addAttribute("message",bindingResult.getFieldError().getDefaultMessage());
+                return "redirect:accounts/withdraw";
+            }
+            Optional<Account> maybeAccount = accountService.findByAccountNumber(accountRequest.getAccountNumber());
             if (maybeAccount.isPresent()) {
                 Account account = maybeAccount.get();
-                if(account.getBalance() < amout){
+                if(account.getBalance() < accountRequest.getBalance()){
                     redirectAttributes.addFlashAttribute("error","На рахунку недостатньо коштів");
                 }
                 else {
-                    account.setBalance(account.getBalance() - amout);
+                    account.setBalance(account.getBalance() - accountRequest.getBalance());
                     accountService.save(account);
                     redirectAttributes.addFlashAttribute("success","Гроші успішно зняті з рахунку");
                 }

@@ -1,7 +1,8 @@
-<%@ page import="com.example.SpringWeb.model.Customer" %>
-<%@ page import="com.example.SpringWeb.model.Account" %>
+<%@ page import="com.example.SpringWeb.DTO.CustomerRequest" %>
+<%@ page import="com.example.SpringWeb.DTO.CustomerResponse" %>
+<%@ page import="com.example.SpringWeb.DTO.AccountResponse" %>
+<%@ page import="com.example.SpringWeb.DTO.EmployerResponse" %>
 <%@ page import="java.util.List" %>
-<%@ page import="com.example.SpringWeb.model.Employer" %>
 <%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="uk">
@@ -40,7 +41,7 @@
 <hr>
 
 <%
-    Customer customer = (Customer) request.getAttribute("customer");
+    CustomerResponse customer = (CustomerResponse) request.getAttribute("customer");
     if (customer != null) {
 %>
 <form action="/customers/update/<%= customer.getId() %>" method="POST">
@@ -60,7 +61,7 @@
 </form>
 
 <%
-    List<Account> accounts = (List<Account>) request.getAttribute("accounts");
+    List<AccountResponse> accounts = (List<AccountResponse>) request.getAttribute("accounts");
     if (accounts != null && !accounts.isEmpty()) {
 %>
 <h3>Рахунки клієнта</h3>
@@ -72,7 +73,7 @@
         <th>Дії</th>
     </tr>
     <%
-        for (Account account : accounts) {
+        for (AccountResponse account : accounts) {
     %>
     <tr>
         <td><%= account.getAccountNumber() %></td>
@@ -118,13 +119,13 @@
 <form action="/customers/add_to_employer" method="POST">
     <input type="hidden" name="customerId" value="<%= customer.getId() %>">
     <label for="employerName">Назва компанії:</label>
-    <input type="number" id="employerName" name="employerName" required ><br><br>
+    <input type="text" id="employerName" name="employerName" required ><br><br>
     <button type="submit">Додати до компанії</button>
 </form>
 <h3>Компанії, де працює цей клієнт</h3>
 
 <%
-    List<Employer> employers = (List<Employer>) request.getAttribute("employers");
+    List<EmployerResponse> employers = (List<EmployerResponse>) request.getAttribute("employers");
     if (employers != null && !employers.isEmpty()) {
 %>
 <table border="1">
@@ -135,7 +136,7 @@
         <th>Дії</th>
     </tr>
     <%
-        for (Employer employer : employers) {
+        for (EmployerResponse employer : employers) {
     %>
     <tr>
         <td><%= employer.getId() %></td>

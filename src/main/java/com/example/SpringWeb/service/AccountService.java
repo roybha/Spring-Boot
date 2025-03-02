@@ -9,14 +9,16 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-@Service
 @Transactional
+@Service
 public class AccountService implements DAO<Account> {
     private final AccountRepository accountRepository;
     private final JdbcTemplate jdbcTemplate;
@@ -30,7 +32,7 @@ public class AccountService implements DAO<Account> {
         try {
             accountRepository.save(account);
             return true;
-        } catch (DataAccessException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }

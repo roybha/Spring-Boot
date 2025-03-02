@@ -1,5 +1,5 @@
-<%@ page import="com.example.SpringWeb.model.Employer" %>
-<%@ page import="com.example.SpringWeb.model.Customer" %>
+<%@ page import="com.example.SpringWeb.DTO.EmployerResponse" %>
+<%@ page import="com.example.SpringWeb.DTO.CustomerResponse" %>
 <%@ page import="java.util.List" %>
 <%@ page language="java" contentType="text/html;charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
@@ -28,17 +28,32 @@
 <%
     }
 %>
+<%
+    String success = request.getParameter("success");
+    String error = request.getParameter("error");
+
+    if (success != null && !success.isEmpty()) {
+%>
+<p style="color:green;"><%= success %></p>
+<%
+    }
+    if (error != null && !error.isEmpty()) {
+%>
+<p style="color:red;"><%= error %></p>
+<%
+    }
+%>
 
 <form action="/employers/change" method="GET">
-    <label for="searchId">Введіть назву компанії:</label>
-    <input type="text" id="searchId" name="name" required min="1">
+    <label for="employerName">Введіть назву компанії:</label>
+    <input type="text" id="employerName" name="employerName" required>
     <button type="submit">Знайти</button>
 </form>
 
 <hr>
 
 <%
-    Employer employer = (Employer) request.getAttribute("employer");
+    EmployerResponse employer = (EmployerResponse) request.getAttribute("employer");
     if (employer != null) {
 %>
 <form action="/employers/update/<%= employer.getId() %>" method="POST">
@@ -54,7 +69,7 @@
 
 <h3>Клієнти компанії</h3>
 <%
-    List<Customer> customers = (List<Customer>) request.getAttribute("customers");
+    List<CustomerResponse> customers = (List<CustomerResponse>) request.getAttribute("customers");
     if (customers != null && !customers.isEmpty()) {
 %>
 <table border="1">
@@ -65,7 +80,7 @@
         <th>Дії</th>
     </tr>
     <%
-        for (Customer customer : customers) {
+        for (CustomerResponse customer : customers) {
     %>
     <tr>
         <td><%= customer.getName() %></td>

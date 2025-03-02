@@ -6,6 +6,8 @@ import com.example.SpringWeb.model.Customer;
 import com.example.SpringWeb.repository.CustomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Service;
@@ -98,6 +100,10 @@ public class CustomerService implements CustomerDAO {
             return false;  // Повертаємо false, якщо сталася помилка
         }
     }
+    public Page<Customer> findAll(Pageable pageable) {
+        return customerRepository.findAll(pageable);
+    }
+
     // RowMapper для перетворення рядка з БД у об'єкт Customer
     private RowMapper<Customer> customerRowMapper() {
         return (rs, rowNum) -> {
