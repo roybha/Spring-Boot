@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS customer_employer;
 DROP TABLE IF EXISTS accounts;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS employers;
+DROP TABLE IF EXISTS admins;
 
 -- Створення таблиці customers
 CREATE TABLE customers (
@@ -48,4 +49,14 @@ CREATE TABLE customer_employer (
                                    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE,
                                    FOREIGN KEY (employer_id) REFERENCES employers(id) ON DELETE CASCADE
 );
+-- Створення таблиці admins
+CREATE TABLE admins (
+                        id SERIAL PRIMARY KEY, -- Автоматично збільшується поле id
+                        username VARCHAR(100) UNIQUE NOT NULL, -- Унікальне поле для логіну адміністратора
+                        password VARCHAR(100) NOT NULL CHECK (LENGTH(password) >= 8), -- Пароль адміністратора з мінімальною довжиною 8 символів
+                        created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Дата створення адміністратора (автоматично заповнюється поточною датою)
+                        last_modified_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Дата останнього оновлення (автоматично заповнюється поточною датою)
+);
+
+
 

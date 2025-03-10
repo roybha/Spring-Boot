@@ -100,8 +100,8 @@ public class Customer_EmployerService implements Customer_EmployerDAO {
         customerEmployerRepository.deleteAll(customerEmployers);
     }
     public void deleteCustomerFromEmployer(Long customerId, Long employerId) {
-       Optional<Customer_Employer> maybeCustomerEmployer = Optional.of(customerEmployerRepository.findByCustomerIdAndEmployerId(customerId,employerId));
-       maybeCustomerEmployer.ifPresent(customerEmployerRepository::delete);
+        Optional<Customer_Employer> maybeCustomerEmployer = Optional.ofNullable(customerEmployerRepository.findByCustomerIdAndEmployerId(customerId, employerId));
+        maybeCustomerEmployer.ifPresent(customerEmployerRepository::delete);
     }
     public Optional<Customer_Employer> findEmployerByCustomerIdAndEmployerId(Long customerId, Long employerId) {
         return Optional.ofNullable(customerEmployerRepository.findByCustomerIdAndEmployerId(customerId,employerId));

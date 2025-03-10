@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 
 @Component
 @Entity
@@ -11,7 +13,6 @@ import org.springframework.stereotype.Component;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 public class Account extends AbstractEntity {
 
     @Column(name = "account_number", unique = true, nullable = false, length = 50)
@@ -53,5 +54,22 @@ public class Account extends AbstractEntity {
                 ", balance=" + balance +
                 '}';
     }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        Account account = (Account) o;
+        return Double.compare(account.balance, balance) == 0 &&
+                Objects.equals(accountNumber, account.accountNumber) &&
+                currency == account.currency &&
+                Objects.equals(customer, account.customer);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), accountNumber, currency, balance, customer);
+    }
+
 
 }

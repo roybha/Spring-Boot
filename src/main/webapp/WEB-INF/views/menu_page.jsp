@@ -21,6 +21,8 @@
     <li><a href="/employers/find">Знайти певну компанію за назвою</a></li>
     <li><a href="/employers/all">Переглянути список компаній</a></li>
 </ul>
-
+<form action="${pageContext.request.contextPath}/logout" method="post">
+    <button type="submit">Вийти</button>
+</form>
 </body>
 </html>

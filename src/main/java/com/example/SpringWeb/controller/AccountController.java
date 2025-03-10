@@ -5,7 +5,6 @@ import com.example.SpringWeb.facade.AccountFacade;
 import com.example.SpringWeb.model.Account;
 import com.example.SpringWeb.model.Currency;
 import com.example.SpringWeb.service.AccountService;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;

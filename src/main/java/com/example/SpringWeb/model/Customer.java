@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 @Entity
@@ -72,6 +73,24 @@ public class Customer extends AbstractEntity {
                 ", phoneNumber='" + phoneNumber + '\'' +
                 ", accounts=" + (accounts != null ? accounts.size() : 0) + // Вивести кількість рахунків, щоб уникнути рекурсії
                 '}';
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;  // Перевіряємо поля з батьківського класу (id, createdDate, lastModifiedDate)
+        Customer customer = (Customer) o;
+        return age == customer.age &&
+                Objects.equals(name, customer.name) &&
+                Objects.equals(surname, customer.surname) &&
+                Objects.equals(email, customer.email) &&
+                Objects.equals(password, customer.password) &&
+                Objects.equals(phoneNumber, customer.phoneNumber);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), name, surname, email, age, password, phoneNumber);
     }
 
 }
