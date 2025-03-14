@@ -32,4 +32,8 @@ public class AdminService implements UserDetailsService {
         }
         return new AdminPrincipal(admin.get());
     }
+    public Boolean checkIfAdminExists(String username) {
+        Optional<Admin> admin = adminRepository.findByUsername(username);
+        return admin.isPresent();
+    }
 }

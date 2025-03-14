@@ -32,6 +32,10 @@ public class RegistrationController {
             redirectAttributes.addFlashAttribute("error", bindingResult.getFieldError().getDefaultMessage());
             return "redirect:/register";
         }
+        if(adminService.checkIfAdminExists(admin.getUsername())){
+            redirectAttributes.addFlashAttribute("error","Вже існує адміністратор з таким іменем");
+            return "redirect:/register";
+        }
         adminService.saveAdmin(adminFacade.getAdminByAdminRequest(admin));
         redirectAttributes.addFlashAttribute("message", "Реєстрація успішна! Тепер ви можете увійти.");
         return "redirect:/login";

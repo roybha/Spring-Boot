@@ -25,24 +25,22 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                                .requestMatchers("/h2-console/**").permitAll()
-                                .requestMatchers("/static/","/login","/register", "/css/**",
-                                        "/js/**","/views/","/WEB-INF/views/**")
-                                .permitAll()
-                                .requestMatchers("/menu").authenticated()
-                                .anyRequest().authenticated()
+                .authorizeRequests(auth -> auth
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/static/**", "/login", "/register", "/css/**", "/js/**", "/views/**", "/WEB-INF/views/**")
+                        .permitAll()
+                        .requestMatchers("/menu").authenticated()
+                        .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login").permitAll()
                         .loginProcessingUrl("/login").permitAll()
-
                         .defaultSuccessUrl("/menu", true)
                         .permitAll()
                 )
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
-                .headers(headers->headers.frameOptions().sameOrigin().httpStrictTransportSecurity().disable())
+                .headers(headers -> headers.frameOptions().sameOrigin().httpStrictTransportSecurity().disable())
                 .build();
     }
     @Bean

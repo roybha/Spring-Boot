@@ -23,7 +23,7 @@
 
     <input type="submit" value="Зареєструватися"/>
 </form:form>
-
+<a href="<%= request.getContextPath() %>/login">Повернутися на сторінку логіна</a>
 </body>
 </html>
 
