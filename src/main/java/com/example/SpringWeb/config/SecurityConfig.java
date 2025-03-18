@@ -35,11 +35,22 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login").permitAll()
                         .loginProcessingUrl("/login").permitAll()
-                        .defaultSuccessUrl("/menu", true)
+                        .defaultSuccessUrl("/menu", true) // Правильне перенаправлення після логіну
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout") // Після виходу перенаправляє на сторінку логіну
+                        .invalidateHttpSession(true) // Очищує сесію
+                        .deleteCookies("JSESSIONID") // Видаляє JSESSIONID кукі
                         .permitAll()
                 )
                 .httpBasic(Customizer.withDefaults())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.ALWAYS))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS) // Примусове створення сесії
+                        .maximumSessions(1) // Обмеження на одну активну сесію на користувача
+                        .maxSessionsPreventsLogin(true) // Забороняє новий вхід, якщо вже є активна сесія
+                )
                 .headers(headers -> headers.frameOptions().sameOrigin().httpStrictTransportSecurity().disable())
                 .build();
     }
