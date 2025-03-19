@@ -5,8 +5,9 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: pg123456
+      POSTGRES_USER: customuser
+      POSTGRES_PASSWORD: custompass
+      POSTGRES_DB: bankdb
     ports:
-      - "5432:5432"
+      - "5433:5432"
     container_name: springContainer

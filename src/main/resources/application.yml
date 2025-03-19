@@ -47,9 +47,9 @@ spring:
     activate:
       on-profile: prod  # PostgreSQL ??? ??????????
   datasource:
-    url: jdbc:postgresql://localhost:5432/bankdb
-    username: postgres
-    password: pg123456
+    url: jdbc:postgresql://localhost:5433/bankdb
+    username: customuser
+    password: custompass
     driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
