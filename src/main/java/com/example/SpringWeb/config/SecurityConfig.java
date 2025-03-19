@@ -49,7 +49,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.ALWAYS) // Примусове створення сесії
                         .maximumSessions(1) // Обмеження на одну активну сесію на користувача
-                        .maxSessionsPreventsLogin(true) // Забороняє новий вхід, якщо вже є активна сесія
+                        .maxSessionsPreventsLogin(true)
+                        // Забороняє новий вхід, якщо вже є активна сесія
                 )
                 .headers(headers -> headers.frameOptions().sameOrigin().httpStrictTransportSecurity().disable())
                 .build();
