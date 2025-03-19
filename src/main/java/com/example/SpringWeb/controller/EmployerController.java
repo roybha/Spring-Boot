@@ -3,6 +3,7 @@ import com.example.SpringWeb.DTO.CustomerResponse;
 import com.example.SpringWeb.DTO.Customer_EmployerRequest;
 import com.example.SpringWeb.DTO.EmployerRequest;
 import com.example.SpringWeb.DTO.EmployerResponse;
+import com.example.SpringWeb.config.AppLogger;
 import com.example.SpringWeb.facade.CustomerFacade;
 import com.example.SpringWeb.facade.EmployerFacade;
 import com.example.SpringWeb.model.Customer;
@@ -35,35 +36,47 @@ public class EmployerController {
     private final CustomerService customerService;
     private final EmployerFacade employerFacade;
     private final CustomerFacade customerFacade;
+    private final AppLogger appLogger;
     @Autowired
     public EmployerController(EmployerService employerService, Customer_EmployerService ceService,
-                              CustomerService customerService,EmployerFacade employerFacade,CustomerFacade customerFacade) {
+                              CustomerService customerService,EmployerFacade employerFacade,CustomerFacade customerFacade,
+                              AppLogger appLogger) {
         this.employerService = employerService;
         this.ceService = ceService;
         this.customerService = customerService;
         this.employerFacade = employerFacade;
         this.customerFacade = customerFacade;
+        this.appLogger = appLogger;
     }
     @PostMapping("/addEmployer")
     public String addEmployer(
             @ModelAttribute @Validated EmployerRequest employerRequest,
             BindingResult bindingResult,
             RedirectAttributes redirectAttributes) {
+        String message;
         try {
             if (bindingResult.hasErrors()) {
-                redirectAttributes.addFlashAttribute("error", bindingResult.getFieldError().getDefaultMessage());
+                message =  bindingResult.getFieldError().getDefaultMessage();
+                redirectAttributes.addFlashAttribute("error",message);
+                appLogger.logWarn(message);
                 return "redirect:/employers/create";
             }
             Optional<Employer> maybeExist = employerService.findByNameAndAddress(employerRequest.getName(), employerRequest.getAddress());
             if (maybeExist.isPresent()) {
-                redirectAttributes.addFlashAttribute("error", "Компанія вже інсує.");
+                message = "Компанія вже існує";
+                redirectAttributes.addFlashAttribute("error", message);
+                appLogger.logWarn(message);
             }else{
                Employer newEmployer = new Employer(employerRequest.getName(), employerRequest.getAddress());
                 employerService.save(newEmployer);
-                redirectAttributes.addFlashAttribute("success", "Компанія додана успішно");
+                message = "Компанія додана успішно";
+                redirectAttributes.addFlashAttribute("success", message);
+                appLogger.logInfo(message);
             }
         }catch (Exception e) {
-            e.printStackTrace();
+            message = e.getMessage();
+            redirectAttributes.addFlashAttribute("error",message);
+            appLogger.logError(message,e);
         }
         return "redirect:/employers/create";
     }
@@ -76,6 +89,7 @@ public class EmployerController {
                                         BindingResult bindingResult,
                                         RedirectAttributes redirectAttributes,
                                         Model model) {
+        String message;
         try {
             if(!bindingResult.hasErrors() ) {
                 Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerEmployerRequest.getEmployerName());
@@ -85,50 +99,66 @@ public class EmployerController {
                             if (ceService.findCustomersByEmployerId(maybeEmployer.get().getId())
                                     .stream()
                                     .anyMatch(customer -> customer.getId().equals(customerEmployerRequest.getCustomerId()))) {
-                                redirectAttributes.addAttribute("error","Клієнт вже присутній у даній компанії");
+                                message = "Клієнт вже присутній у даній компанії";
+                                redirectAttributes.addAttribute("error",message);
+                                appLogger.logWarn(message);
                             }
                             else {
-                                redirectAttributes.addAttribute("success","Клієнта успішно додано до компанії");
+                                message = "Клієнта успішно додано до компанії";
+                                redirectAttributes.addAttribute("success",message);
                                 ceService.save(new Customer_Employer(maybeEmployer.get(), maybeCustomer.get()));
+                                appLogger.logInfo(message);
                             }
                         }
-                        else
-                            redirectAttributes.addAttribute("error","Не знайдено клієнта з Id: "+ customerEmployerRequest.getCustomerId());
+                        else {
+                            message = "Не знайдено клієнта з Id: " + customerEmployerRequest.getCustomerId();
+                            redirectAttributes.addAttribute("error",message);
+                            appLogger.logWarn(message);
+                        }
                 }
                 else{
-                    redirectAttributes.addAttribute("error","Не знайдено компанію з ім'ям "+customerEmployerRequest.getEmployerName());
+                    message = "Не знайдено компанію з ім'ям "+customerEmployerRequest.getEmployerName();
+                    redirectAttributes.addAttribute("error",message);
+                    appLogger.logWarn(message);
                 }
             }
-            else
-                redirectAttributes.addAttribute("error",bindingResult.getFieldError().getDefaultMessage());
+            else {
+                message = bindingResult.getFieldError().getDefaultMessage();
+                redirectAttributes.addAttribute("error", message);
+                appLogger.logWarn(message);
+            }
 
         }catch (DataAccessException e){
-            redirectAttributes.addFlashAttribute("error","помилка доступу до БД");
+            redirectAttributes.addFlashAttribute("error","Помилка доступу до БД");
+            appLogger.logError(e.getMessage(),e);
         }
         return "redirect:/employers/change?employerName=" + customerEmployerRequest.getEmployerName();
     }
     @GetMapping("/change")
     public String showChangeForm(@ModelAttribute Customer_EmployerRequest customerEmployerRequest,
-                                 RedirectAttributes redirectAttributes,
                                  Model model) {
+        String message;
         try {
             if(customerEmployerRequest.getEmployerName() != null) {
                 Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerEmployerRequest.getEmployerName());
-
                 if(maybeEmployer.isPresent()) {
                     model.addAttribute("employer", employerFacade.getEmployerResponseByEmployer(maybeEmployer.get()));
                     List<Customer> customers = ceService.findCustomersByEmployerId(maybeEmployer.get().getId());
                     List<CustomerResponse> customerResponses = customers.stream()
                             .map(customerFacade::getCustomerResponseByCustomer)
                             .collect(Collectors.toList());
-
+                    appLogger.logInfo("Редагування компанії");
                     model.addAttribute("customers", customerResponses);
                 }
-                else
-                    model.addAttribute("error","Не знайдено компанію з  назвою: "+ customerEmployerRequest.getEmployerName());
+                else {
+                    message = "Не знайдено компанію з  назвою: " + customerEmployerRequest.getEmployerName();
+                    model.addAttribute("error", message);
+                    appLogger.logWarn(message);
+                }
             }
         }catch (Exception e) {
             model.addAttribute("error","Помилка доступу до БД");
+            appLogger.logError(e.getMessage(),e);
         }
         return "edit-employer";
     }
@@ -137,72 +167,99 @@ public class EmployerController {
                                  @ModelAttribute EmployerRequest employerRequest,
                                  BindingResult bindingResult,
                                  RedirectAttributes redirectAttributes) {
+        String message;
         try {
             Optional<Employer> maybeEmployer = employerService.findById(id);
 
             if (maybeEmployer.isPresent()) {
                 Employer employer = maybeEmployer.get();
                 if(bindingResult.hasFieldErrors("name")) {
-                    redirectAttributes.addAttribute("error",bindingResult.getFieldError().getDefaultMessage());
+                    message = bindingResult.getFieldError().getDefaultMessage();
+                    redirectAttributes.addAttribute("error",message);
+                    appLogger.logWarn(message);
                     return "redirect:/employers/change?employerName=" + employer.getName();
                 }
                 employer.setName(employerRequest.getName());
                if(bindingResult.hasFieldErrors("address")) {
-                   redirectAttributes.addFlashAttribute("error",bindingResult.getFieldError().getDefaultMessage());
+                   message = bindingResult.getFieldError().getDefaultMessage();
+                   redirectAttributes.addFlashAttribute("error",message);
+                   appLogger.logWarn(message);
                    return "redirect:/employers/change?employerName=" + employer.getName();
                }
                 employer.setAddress(employerRequest.getAddress());
 
                 employerService.save(employer);
-                redirectAttributes.addFlashAttribute("success", "Компанію успішно оновлено!");
+                message = "Компанію успішно оновлено";
+                redirectAttributes.addFlashAttribute("success",message);
+                appLogger.logInfo(message);
             } else {
-                redirectAttributes.addFlashAttribute("error", "Компанію з таким ID не знайдено.");
+                message = "Компанію з ID "+ id +" не знайдено.";
+                redirectAttributes.addFlashAttribute("error", message);
+                appLogger.logWarn(message);
             }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Помилка при оновленні компанії.");
+            appLogger.logError(e.getMessage(),e);
         }
 
         return "redirect:/employers/change?employerName=" + employerRequest.getName();
     }
     @PostMapping("/deleteEmployer/{name}")
     public String deleteEmployer(@PathVariable(name = "name") String employerName, RedirectAttributes redirectAttributes) {
+        String message;
         try {
             Optional<Employer> maybeEmployer = employerService.findByEmployerName(employerName);
             if(maybeEmployer.isPresent()) {
                 employerService.delete(maybeEmployer.get());
-                redirectAttributes.addFlashAttribute("success","Компанію успішно видалено");
-            }else
-                redirectAttributes.addFlashAttribute("error","Не знайдено компанію з іменем: "+ employerName);
+                message = "Компанію успішно видалено";
+                redirectAttributes.addFlashAttribute("success",message);
+                appLogger.logInfo(message);
+            }else {
+                message = "Не знайдено компанію з іменем: " + employerName;
+                redirectAttributes.addFlashAttribute("error",message);
+                appLogger.logWarn(message);
+            }
         }catch (DataAccessException e){
             redirectAttributes.addFlashAttribute("error","Помилка доступу до БД");
+            appLogger.logError(e.getMessage(),e);
         }
         return "redirect:/employers/change";
     }
     @PostMapping("/deleteCustomer")
     public String deleteCustomer(@ModelAttribute Customer_EmployerRequest customerEmployerRequest,
                                  RedirectAttributes redirectAttributes) {
+        String message;
         try {
             Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerEmployerRequest.getEmployerName());
             if(maybeEmployer.isPresent()) {
                 Optional<Customer> maybeCustomer = customerService.findById(customerEmployerRequest.getCustomerId());
                 if(maybeCustomer.isPresent()) {
                     ceService.deleteByCustomerId(maybeCustomer.get().getId());
-                    redirectAttributes.addAttribute("success","Клієнта з Id "+customerEmployerRequest.getCustomerId() +" успішно видаленно з компанії  "+customerEmployerRequest.getEmployerName());
+                    message = "Клієнта з Id "+customerEmployerRequest.getCustomerId() +" успішно видаленно з компанії  "+customerEmployerRequest.getEmployerName();
+                    redirectAttributes.addAttribute("success",message);
+                    appLogger.logInfo(message);
                 }
                 else{
-                    redirectAttributes.addAttribute("error","Не знайдено клієнта з Id: "+ customerEmployerRequest.getCustomerId());
+                    message = "Не знайдено клієнта з Id: "+ customerEmployerRequest.getCustomerId();
+                    redirectAttributes.addAttribute("error",message);
+                    appLogger.logWarn(message);
                 }
             }
-            else
-                redirectAttributes.addAttribute("error","Не знайдено компанію з іменем: "+ customerEmployerRequest.getEmployerName());
+            else{
+                message = "Не знайдено компанію з іменем: "+ customerEmployerRequest.getEmployerName();
+                redirectAttributes.addAttribute("error",message);
+                appLogger.logWarn(message);
+            }
         }catch (DataAccessException e){
             redirectAttributes.addFlashAttribute("error","Помилка доступу до БД");
+            appLogger.logError(e.getMessage(),e);
         }
         return "redirect:/employers/change?employerName=" + customerEmployerRequest.getEmployerName();
     }
     @GetMapping("/find")
     public String findEmployer(@ModelAttribute Customer_EmployerRequest customerEmployerRequest,
                                Model model) {
+        String message;
         if(customerEmployerRequest != null) {
             Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerEmployerRequest.getEmployerName());
             if(maybeEmployer.isPresent()) {
@@ -211,10 +268,12 @@ public class EmployerController {
                 List<CustomerResponse> customerResponses = customers.stream()
                         .map(customerFacade::getCustomerResponseByCustomer)
                         .collect(Collectors.toList());
-
+                appLogger.logInfo("Дані про клієнтів компанії знайдено успішно");
                 model.addAttribute("customers", customerResponses);
             }else if(customerEmployerRequest.getEmployerName()!=null) {
-                model.addAttribute("error","Не знайдено компанію з назвою: "+ customerEmployerRequest.getEmployerName());
+                message = "Не знайдено компанію з назвою: "+ customerEmployerRequest.getEmployerName();
+                model.addAttribute("error",message);
+                appLogger.logWarn(message);
             }
 
         }
@@ -236,6 +295,7 @@ public class EmployerController {
         model.addAttribute("totalPages", employerPage.getTotalPages());
         model.addAttribute("totalEmployers", employerPage.getTotalElements());
         model.addAttribute("size", size);
+        appLogger.logInfo("Отримуємо сторінку списку компаній");
 
         return "employers";
     }

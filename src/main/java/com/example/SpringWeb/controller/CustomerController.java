@@ -1,5 +1,6 @@
 package com.example.SpringWeb.controller;
 import com.example.SpringWeb.DTO.*;
+import com.example.SpringWeb.config.AppLogger;
 import com.example.SpringWeb.facade.AccountFacade;
 import com.example.SpringWeb.facade.CustomerFacade;
 import com.example.SpringWeb.facade.EmployerFacade;
@@ -38,6 +39,7 @@ public class CustomerController {
     private final CustomerFacade customerFacade;
     private final AccountFacade accountFacade;
     private final EmployerFacade employerFacade;
+    private final AppLogger appLogger;
     @GetMapping("/error")
     public String errorPage(Model model) {
         return "error";
@@ -45,7 +47,8 @@ public class CustomerController {
     @Autowired
     public CustomerController(CustomerService customerService, AccountService accountService,
                               Customer_EmployerService customerEmployerService, EmployerService employerService,
-                              CustomerFacade customerFacade,AccountFacade accountFacade,EmployerFacade employerFacade) {
+                              CustomerFacade customerFacade,AccountFacade accountFacade,EmployerFacade employerFacade,
+                              AppLogger appLogger) {
         this.accountService = accountService;
         this.customerService = customerService;
         this.customerEmployerService = customerEmployerService;
@@ -53,6 +56,7 @@ public class CustomerController {
         this.customerFacade = customerFacade;
         this.accountFacade = accountFacade;
         this.employerFacade = employerFacade;
+        this.appLogger = appLogger;
     }
 
     @GetMapping("/all")
@@ -70,6 +74,7 @@ public class CustomerController {
         model.addAttribute("currentPage", customerPage.getNumber() + 1); // Додаємо 1 для зручності користувача
         model.addAttribute("totalPages", customerPage.getTotalPages());
         model.addAttribute("totalCustomers", customerPage.getTotalElements());
+        appLogger.logInfo("Отримуємо сторінку списку клієнтів");
 
         return "customers";
     }
@@ -82,16 +87,22 @@ public class CustomerController {
     @PostMapping("/add")
     public String addCustomer(@ModelAttribute @Validated CustomerRequest customerRequest,BindingResult bindingResult,
                               Model model, RedirectAttributes redirectAttributes) {
+        String errorMessage;
         try{
             if (bindingResult.hasErrors() || !bindingResult.getAllErrors().isEmpty()) {
-               redirectAttributes.addAttribute("message", bindingResult.getFieldError().getDefaultMessage());
+               errorMessage = bindingResult.getFieldError().getDefaultMessage();
+               redirectAttributes.addAttribute("message", errorMessage);
+               appLogger.logWarn(errorMessage);
                return "redirect:/customers/error";
             }else{
                 customerService.save(customerFacade.getCustomerByCustomerRequest(customerRequest));
                 redirectAttributes.addFlashAttribute("success", "Клієнта додано успішно");
+                appLogger.logInfo("Клієнта додано успішно");
             }
         }catch (DataAccessException e){
             model.addAttribute("message","Помилка доступу до бази даних");
+            errorMessage = e.getMessage();
+            appLogger.logError(errorMessage,e);
         }
         return "redirect:/customers/create";
     }
@@ -102,6 +113,7 @@ public class CustomerController {
     }
     @GetMapping("/find")
     public String findCustomerById(@RequestParam(name = "id",required = false) Long id, Model model) {
+        String errorMessage;
         try {
             if(id != null){
                 Optional<Customer> customer = customerService.findById(id);
@@ -123,13 +135,19 @@ public class CustomerController {
                                 .collect(Collectors.toList());
                         model.addAttribute("employers", employerResponses);
                     });
+                    appLogger.logInfo("Користувача успішно знайдено");
                 }
-                else
-                    model.addAttribute("error","Не знайдено відповідного користувача");
+                else {
+                    errorMessage = "Не знайдено відповідного користувача";
+                    model.addAttribute("error", errorMessage);
+                    appLogger.logWarn(errorMessage);
+                }
             }
 
         }catch (DataAccessException e){
             model.addAttribute("error","Помилка доступу до БД");
+            errorMessage = e.getMessage();
+            appLogger.logError(errorMessage,e);
         }
         return "search";
 
@@ -138,6 +156,7 @@ public class CustomerController {
     public String changeCustomerById(@ModelAttribute CustomerRequest customerRequest,
                                      RedirectAttributes redirectAttributes,
                                      Model model) {
+        String errorMessage;
         try {
             if(customerRequest.getId() != null) {
                 Optional<Customer> customer = customerService.findById(customerRequest.getId());
@@ -162,12 +181,14 @@ public class CustomerController {
                                             .collect(Collectors.toList())
                             )
                     );
-
+                    appLogger.logInfo("Потенційне редагування клієнта");
                     return "edit-customer";
                 }
             }
         }catch (DataAccessException e){
-                redirectAttributes.addAttribute("error", "Клієнта з таким ID не знайдено");
+                redirectAttributes.addAttribute("error", "Помилка доступу до БД");
+                errorMessage = e.getMessage();
+                appLogger.logError(errorMessage,e);
         }
 
         return "edit-customer";
@@ -175,23 +196,35 @@ public class CustomerController {
     @PostMapping("/update/{id}")
     public String updateCustomer(@PathVariable int id, @ModelAttribute CustomerRequest customer, Model model) {
         boolean updated = customerService.save(customerFacade.getCustomerByCustomerRequest(customer));
+        String message;
         if (updated) {
-            model.addAttribute("success", "Дані клієнта успішно оновлено");
+            message = "Дані клієнта успішно оновлено";
+            model.addAttribute("success", message);
+            appLogger.logInfo("");
         } else {
-            model.addAttribute("error", "Не вдалося оновити клієнта");
+            message = "Не вдалося оновити клієнта";
+            model.addAttribute("error",message );
+            appLogger.logWarn(message);
         }
         return "redirect:/customers/change?id=" + id;
     }
     @PostMapping("/delete/{id}")
     public String deleteCustomer(@PathVariable int id, Model model) {
+        String message;
         try {
             if(customerService.deleteById(id)) {
-                model.addAttribute("success","Клієнта з ID " + id + " успішно видалено.");
+                message = "Клієнта з ID " + id + " успішно видалено.";
+                model.addAttribute("success",message);
+                appLogger.logInfo(message);
             }else {
-                model.addAttribute("error","Не вдалося знайти клієнта з ID " + id + " для видалення.");
+                message = "Не вдалося знайти клієнта з ID " + id + " для видалення.";
+                model.addAttribute("error",message);
+                appLogger.logWarn(message);
             }
         }catch (DataAccessException e){
             model.addAttribute("error","Не вдалося видалити клієнта з "+id);
+            message = e.getMessage();
+            appLogger.logError(message,e);
         }
         return "edit-customer";
     }
@@ -199,17 +232,25 @@ public class CustomerController {
     public String removeFromEmployer(@PathVariable Long customerId,
                                      @RequestParam Long employerId,
                                      RedirectAttributes redirectAttributes) {
+        String message;
         try {
             Optional<Employer> employer = employerService.findById(employerId);
             if(employer.isPresent()){
+                message = "Клієнта з Id "+customerId+" успішно видалено з компанії";
                 customerEmployerService.deleteCustomerFromEmployer(customerId, employerId);
-                redirectAttributes.addFlashAttribute("success","Клієнта з Id "+customerId+" успішно видалено з компанії");
+                redirectAttributes.addFlashAttribute("success",message);
+                appLogger.logInfo(message);
             }
-            else
-                redirectAttributes.addFlashAttribute("error","Не знайдено компанію з Id "+employerId);
+            else {
+                message = "Не знайдено компанію з Id " + employerId;
+                redirectAttributes.addFlashAttribute("error",message);
+                appLogger.logWarn(message);
+            }
 
         }catch (DataAccessException e){
             redirectAttributes.addFlashAttribute("error","Помилка доступу до БД");
+            message = e.getMessage();
+            appLogger.logError(message,e);
         }
         return "redirect:/customers/change?id=" + customerId;
     }
@@ -217,35 +258,47 @@ public class CustomerController {
     public String addToEmployer(@ModelAttribute @Validated Customer_EmployerRequest customerRequest,
                                 BindingResult bindingResult,
                                 RedirectAttributes redirectAttributes) {
+        String message;
         try {
             if(bindingResult.hasErrors()) {
-                redirectAttributes.addAttribute("message",bindingResult.getFieldError().getDefaultMessage());
+                message = bindingResult.getFieldError().getDefaultMessage();
+                redirectAttributes.addAttribute("message",message);
+                appLogger.logWarn(message);
                 return "redirect:/customers/error";
             }
             Optional<Employer> maybeEmployer = employerService.findByEmployerName(customerRequest.getEmployerName());
             if(maybeEmployer.isPresent()){
                 Optional<Customer_Employer> maybeCE = customerEmployerService.findEmployerByCustomerIdAndEmployerId(customerRequest.getCustomerId(), maybeEmployer.get().getId());
                 if(maybeCE.isPresent()){
-                    redirectAttributes.addFlashAttribute("error","Відповідний контракт між користувачем і компанією вже підпписаний");
+                    message = "Відповідний контракт між користувачем і компанією вже підписаний";
+                    redirectAttributes.addFlashAttribute("error",message);
+                    appLogger.logWarn(message);
                 }else {
                     Optional<Customer> customerOpt = customerService.findById(customerRequest.getCustomerId());
                     if (customerOpt.isPresent()) {
                         Customer customer = customerOpt.get();
                         Employer employer = maybeEmployer.get();
-
                         Customer_Employer customerEmployer = new Customer_Employer(employer,customer);
                         customerEmployerService.save(customerEmployer);
+                        appLogger.logInfo("Клієнта успішно додано до компанії");
                     }else{
-                        redirectAttributes.addFlashAttribute("error","Не знайдено клієнта з Id "+ customerRequest.getCustomerId());
+                        message = "Не знайдено клієнта з Id "+ customerRequest.getCustomerId();
+                        redirectAttributes.addFlashAttribute("error",message);
+                        appLogger.logWarn(message);
                     }
                 }
             }
-            else
-                redirectAttributes.addFlashAttribute("error","Не знайдено компанію з ім'ям "+customerRequest.getEmployerName());
+            else {
+                message = "Не знайдено компанію з ім'ям " + customerRequest.getEmployerName();
+                redirectAttributes.addFlashAttribute("error", message);
+                appLogger.logWarn(message);
+            }
 
 
         }catch (DataAccessException e){
             redirectAttributes.addFlashAttribute("error","Помилка доступу до БД");
+            message = e.getMessage();
+            appLogger.logError(message,e);
         }
         return "redirect:/customers/change?id=" + customerRequest.getCustomerId();
     }

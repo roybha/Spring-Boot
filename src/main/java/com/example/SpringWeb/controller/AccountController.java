@@ -1,10 +1,12 @@
 package com.example.SpringWeb.controller;
 import com.example.SpringWeb.DTO.AccountRequest;
 import com.example.SpringWeb.DTO.TransferRequest;
+import com.example.SpringWeb.config.AppLogger;
 import com.example.SpringWeb.facade.AccountFacade;
 import com.example.SpringWeb.model.Account;
 import com.example.SpringWeb.model.Currency;
 import com.example.SpringWeb.service.AccountService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
@@ -16,15 +18,19 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.Optional;
 
 @Controller
+@Slf4j
 @RequestMapping("/accounts")
 public class AccountController {
     private final AccountService accountService;
     private final AccountFacade accountFacade;
+    private final AppLogger appLogger;
     @Autowired
-    public AccountController(AccountService accountService, AccountFacade accountFacade) {
+    public AccountController(AccountService accountService,
+                             AccountFacade accountFacade,
+                             AppLogger appLogger) {
         this.accountService = accountService;
         this.accountFacade = accountFacade;
-
+        this.appLogger = appLogger;
     }
     @GetMapping("/error")
     public String error() {
@@ -33,16 +39,21 @@ public class AccountController {
     @PostMapping("/create")
     public String accounts(@ModelAttribute @Validated AccountRequest accountRequest, BindingResult result, RedirectAttributes redirectAttributes) {
         if (result.hasFieldErrors("balance")) {
-            redirectAttributes.addFlashAttribute("error", result.getFieldError("balance").getDefaultMessage());
+            String errorMessage = result.getFieldError("balance").getDefaultMessage();
+            redirectAttributes.addFlashAttribute("error", errorMessage);
+            appLogger.logWarn(errorMessage);
             return "redirect:/customers/change?id=" + accountRequest.getCustomerId();
         }
         accountRequest.setAccountNumber(AccountService.generateAccountNumber());
         try {
-            if(accountService.save(accountFacade.getAccountByAccountRequest(accountRequest)))
+            if(accountService.save(accountFacade.getAccountByAccountRequest(accountRequest))){
+              appLogger.logInfo("Збереження нового акаунта");
               return "redirect:/customers/change?id=" + accountRequest.getCustomerId();
+            }
             throw new Exception();
         }catch (Exception e) {
             redirectAttributes.addAttribute("message", "Помилка збереження рахунку");
+            appLogger.logError(e.getMessage(),e);
             return "redirect:/accounts/error";
         }
     }
@@ -51,23 +62,27 @@ public class AccountController {
 
     @PostMapping("/delete")
     public String deleteAccount(@ModelAttribute AccountRequest accountRequest, Model model) {
-        Optional<Account> account = accountService.findByAccountNumber(accountRequest.getAccountNumber());
+        String accountNumber = accountRequest.getAccountNumber();
+        Optional<Account> account = accountService.findByAccountNumber(accountNumber);
         if(account.isPresent()){
             long customerId = account.get().getCustomer().getId();
             accountService.deleteById(account.get().getId());
+            appLogger.logInfo(String.format("Рахунок %s клієнта з Id %d видалено успішно", accountNumber, customerId));
             return "redirect:/customers/change?id=" + customerId;
         }
         else {
-            model.addAttribute("message", "Даного акаунту не знайдено");
+            String errorMessage = "Даного акаунту не знайдено";
+            model.addAttribute("message", errorMessage);
+            appLogger.logWarn(errorMessage);
             return "error";
         }
     }
     @GetMapping("/operation")
-    public String operation(Model model) {
+    public String operation() {
         return "account-operations";
     }
     @GetMapping("/deposit")
-    public String deposit(Model model) {
+    public String deposit() {
         return "deposit";
     }
     @PostMapping("/deposit")
@@ -75,22 +90,32 @@ public class AccountController {
                           @ModelAttribute  AccountRequest accountRequest,
                           BindingResult result,
                           RedirectAttributes redirectAttributes) {
+        String errorMessage;
         if(result.hasFieldErrors("balance")) {
-            redirectAttributes.addFlashAttribute("error", result.getFieldError("balance").getDefaultMessage());
+            errorMessage = result.getFieldError("balance").getDefaultMessage();
+            redirectAttributes.addFlashAttribute("error", errorMessage);
+            appLogger.logWarn(errorMessage);
             return "redirect:/accounts/deposit";
         }
         try {
-            Optional<Account> maybeAccount = accountService.findByAccountNumber(accountRequest.getAccountNumber());
+            String accountNumber = accountRequest.getAccountNumber();
+            Double balanceUp = accountRequest.getBalance();
+            Optional<Account> maybeAccount = accountService.findByAccountNumber(accountNumber);
             if (maybeAccount.isPresent()) {
                 Account account = maybeAccount.get();
-                account.setBalance(account.getBalance() + accountRequest.getBalance());
+                account.setBalance(account.getBalance() + balanceUp);
                 accountService.save(account);
                 redirectAttributes.addFlashAttribute("success", "Рахунок поповнено");
+                appLogger.logInfo(String.format("Рахунок з номером %s успішно поповнено на %.2f",accountNumber, balanceUp));
             } else {
-                redirectAttributes.addFlashAttribute("error", "Не знайдено відповідного рахунку");
+                errorMessage =String.format("Не знайдено відповідного рахунку з номером %s", accountNumber);
+                redirectAttributes.addFlashAttribute("error", errorMessage);
+                appLogger.logWarn(errorMessage);
             }
         } catch (DataAccessException e) {
+            errorMessage = e.getMessage();
             redirectAttributes.addFlashAttribute("error", "Помилка доступу до бази даних");
+            appLogger.logError(errorMessage,e);
         }
         return "redirect:/accounts/deposit";
     }
@@ -102,9 +127,12 @@ public class AccountController {
     public String transfer(@ModelAttribute @Validated TransferRequest transferRequest,
                            BindingResult result,
                            RedirectAttributes redirectAttributes) {
+        String errorMessage;
         try {
             if(result.hasErrors()) {
-                redirectAttributes.addFlashAttribute("error", result.getFieldError().getDefaultMessage());
+                errorMessage = result.getFieldError().getDefaultMessage();
+                redirectAttributes.addFlashAttribute("error", errorMessage);
+                appLogger.logWarn(errorMessage);
                 return "redirect:/accounts/transfer";
             }
             Optional<Account> maybeFromAccount = accountService.findByAccountNumber(transferRequest.getFromAccountNumber());
@@ -119,22 +147,31 @@ public class AccountController {
                     toAccount.setBalance(toAccount.getBalance() +Currency.convertTo(Currency.getFromName(transferRequest.getCurrency()),toAccount.getCurrency(),transferRequest.getAmount()));
                     accountService.save(toAccount);
                     redirectAttributes.addFlashAttribute("success","Переказ грошей здійснено успішно");
+                    appLogger.logInfo(String.format("Переказ в розмірі %.2f з рахунку %s на рахунок %s здійснено успішно",convertedSum,fromAccount.getAccountNumber(),toAccount.getAccountNumber()));
                 }else{
                     redirectAttributes.addFlashAttribute("error","На рахунку недостатньо коштів для здійснення переказу");
+                    appLogger.logWarn(String.format("На рахунку %s недостатньо коштів для здійснення переказу",fromAccount.getAccountNumber()));
                 }
             }
             else if (maybeFromAccount.isPresent()) {
-                redirectAttributes.addFlashAttribute("error","Введено некоректний номер рахунку отримувача");
+                errorMessage = "Введено некоректний номер рахунку отримувача";
+                redirectAttributes.addFlashAttribute("error",errorMessage);
+                appLogger.logWarn(errorMessage);
             }
             else if (maybeToAccount.isPresent()) {
-                redirectAttributes.addFlashAttribute("error","Введено некоректний номер рахунку відправника");
+                errorMessage = "Введено некоректний номер рахунку відправника";
+                redirectAttributes.addFlashAttribute("error",errorMessage);
+                appLogger.logWarn(errorMessage);
             }
             else {
-                redirectAttributes.addFlashAttribute("error","Введено некоректні номери рахунків відправника/отримувача");
+                errorMessage = "Введено некоректні номери рахунків відправника/отримувача";
+                redirectAttributes.addFlashAttribute("error",errorMessage);
+                appLogger.logWarn(errorMessage);
             }
 
         }catch (DataAccessException e){
             redirectAttributes.addFlashAttribute("error","Помилка доступу до бази даних");
+            appLogger.logError(e.getMessage(),e);
         }
         return "redirect:/accounts/transfer";
     }
@@ -147,28 +184,37 @@ public class AccountController {
     public String withdraw(@ModelAttribute  AccountRequest accountRequest,
                            BindingResult bindingResult,
                            RedirectAttributes redirectAttributes) {
+        String errorMessage;
         try{
             if (bindingResult.hasFieldErrors("balance") || bindingResult.hasFieldErrors("accountNumber")) {
-                redirectAttributes.addAttribute("message",bindingResult.getFieldError().getDefaultMessage());
+                errorMessage = bindingResult.getFieldError().getDefaultMessage();
+                redirectAttributes.addAttribute("message",errorMessage);
+                appLogger.logWarn(errorMessage);
                 return "redirect:accounts/withdraw";
             }
             Optional<Account> maybeAccount = accountService.findByAccountNumber(accountRequest.getAccountNumber());
             if (maybeAccount.isPresent()) {
                 Account account = maybeAccount.get();
                 if(account.getBalance() < accountRequest.getBalance()){
-                    redirectAttributes.addFlashAttribute("error","На рахунку недостатньо коштів");
+                    errorMessage = "На рахунку недостатньо коштів";
+                    redirectAttributes.addFlashAttribute("error",errorMessage);
+                    appLogger.logWarn(errorMessage);
                 }
                 else {
                     account.setBalance(account.getBalance() - accountRequest.getBalance());
                     accountService.save(account);
                     redirectAttributes.addFlashAttribute("success","Гроші успішно зняті з рахунку");
+                    appLogger.logInfo("Гроші успішно зняті з рахунку");
                 }
             }
             else {
-                redirectAttributes.addFlashAttribute("Введено некоректний номер рахунку");
+                errorMessage = "Введено некоректний номер рахунку";
+                redirectAttributes.addFlashAttribute(errorMessage);
+                appLogger.logWarn(errorMessage);
             }
         }catch (DataAccessException e){
             redirectAttributes.addFlashAttribute("error", "Помилка доступу до бази даних");
+            appLogger.logError(e.getMessage(),e);
         }
         return "redirect:/accounts/withdraw";
     }

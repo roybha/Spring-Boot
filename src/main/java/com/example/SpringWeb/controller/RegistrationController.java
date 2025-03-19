@@ -1,5 +1,6 @@
 package com.example.SpringWeb.controller;
 import com.example.SpringWeb.DTO.AdminRequest;
+import com.example.SpringWeb.config.AppLogger;
 import com.example.SpringWeb.facade.AdminFacade;
 import com.example.SpringWeb.service.AdminService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +16,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 public class RegistrationController {
 
+    private final AdminService adminService;
+
+    private final AdminFacade adminFacade;
+
+    private final AppLogger appLogger;
     @Autowired
-    private AdminService adminService;
-    @Autowired
-    private AdminFacade adminFacade;
+    public RegistrationController(AppLogger appLogger, AdminService adminService, AdminFacade adminFacade) {
+        this.appLogger = appLogger;
+        this.adminService = adminService;
+        this.adminFacade = adminFacade;
+    }
 
     @GetMapping("/register")
     public String showRegistrationForm(Model model) {
@@ -28,16 +36,23 @@ public class RegistrationController {
 
     @PostMapping("/register")
     public String registerUser(@ModelAttribute @Validated AdminRequest admin,BindingResult bindingResult ,RedirectAttributes redirectAttributes) {
+        String message;
         if (bindingResult.hasErrors()) {
-            redirectAttributes.addFlashAttribute("error", bindingResult.getFieldError().getDefaultMessage());
+            message =  bindingResult.getFieldError().getDefaultMessage();
+            redirectAttributes.addFlashAttribute("error",message);
+            appLogger.logWarn(message);
             return "redirect:/register";
         }
         if(adminService.checkIfAdminExists(admin.getUsername())){
-            redirectAttributes.addFlashAttribute("error","Вже існує адміністратор з таким іменем");
+            message = "Вже існує адміністратор з таким іменем";
+            redirectAttributes.addFlashAttribute("error",message);
+            appLogger.logWarn(message);
             return "redirect:/register";
         }
         adminService.saveAdmin(adminFacade.getAdminByAdminRequest(admin));
-        redirectAttributes.addFlashAttribute("message", "Реєстрація успішна! Тепер ви можете увійти.");
+        message = "Реєстрація успішна";
+        redirectAttributes.addFlashAttribute("message",message);
+        appLogger.logInfo(message);
         return "redirect:/login";
     }
 }

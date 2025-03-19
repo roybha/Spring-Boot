@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeRequests(auth -> auth
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/static/**", "/login", "/register", "/css/**", "/js/**", "/views/**", "/WEB-INF/views/**")
+                        .requestMatchers("/static/**", "/login", "/register", "/views/**", "/WEB-INF/views/**")
                         .permitAll()
                         .requestMatchers("/menu").authenticated()
                         .anyRequest().authenticated()
@@ -35,22 +35,21 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login").permitAll()
                         .loginProcessingUrl("/login").permitAll()
-                        .defaultSuccessUrl("/menu", true) // Правильне перенаправлення після логіну
+                        .defaultSuccessUrl("/menu", true)
                         .permitAll()
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout") // Після виходу перенаправляє на сторінку логіну
-                        .invalidateHttpSession(true) // Очищує сесію
-                        .deleteCookies("JSESSIONID") // Видаляє JSESSIONID кукі
+                        .logoutSuccessUrl("/login?logout")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS) // Примусове створення сесії
-                        .maximumSessions(1) // Обмеження на одну активну сесію на користувача
+                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
+                        .maximumSessions(1)
                         .maxSessionsPreventsLogin(true)
-                        // Забороняє новий вхід, якщо вже є активна сесія
                 )
                 .headers(headers -> headers.frameOptions().sameOrigin().httpStrictTransportSecurity().disable())
                 .build();
