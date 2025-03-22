@@ -59,51 +59,89 @@
 
     <button type="submit">Зберегти зміни</button>
 </form>
-
-<%
-    List<AccountResponse> accounts = (List<AccountResponse>) request.getAttribute("accounts");
-    if (accounts != null && !accounts.isEmpty()) {
-%>
 <h3>Рахунки клієнта</h3>
-<table border="1">
+<table border="1" id="accountsTable">
     <tr>
         <th>Номер рахунку</th>
         <th>Баланс</th>
         <th>Валюта</th>
         <th>Дії</th>
     </tr>
+    <tbody id="accountsBody">
     <%
-        for (AccountResponse account : accounts) {
+        List<AccountResponse> accounts = (List<AccountResponse>) request.getAttribute("accounts");
+        if (accounts != null && !accounts.isEmpty()) {
+            for (AccountResponse account : accounts) {
     %>
-    <tr>
+    <tr id="row-<%= account.getAccountNumber() %>">
         <td><%= account.getAccountNumber() %></td>
         <td><%= account.getBalance() %></td>
         <td><%= account.getCurrency() %></td>
         <td>
-            <form action="/accounts/delete" method="POST" style="display:inline;">
-                <input type="hidden" name="accountNumber" value="<%= account.getAccountNumber() %>">
-                <button type="submit" onclick="return confirm('Ви впевнені, що хочете видалити цей рахунок?')">Видалити</button>
-            </form>
+            <button onclick="deleteAccount('<%= account.getAccountNumber() %>')">
+                Видалити
+            </button>
         </td>
     </tr>
+    <%
+        }
+    } else {
+    %>
+    <tr id="noAccountsRow">
+        <td colspan="4">У цього клієнта немає рахунків.</td>
+    </tr>
     <% } %>
+    </tbody>
 </table>
-<%
-} else {
-%>
-<p>У цього клієнта немає рахунків.</p>
-<%
+
+<script>
+    var socket = new WebSocket('ws://localhost:9000/ws/accounts/delete');
+
+    socket.onopen = function() {
+        console.log("WebSocket підключено для оновлення рахунків");
+    };
+
+    socket.onmessage = function (event) {
+        var response = JSON.parse(event.data);
+        if (response.status === "success") {
+            alert("✅ " + response.message);
+        } else {
+            alert("❌ Помилка: " + response.message);
+        }
+    };
+
+    socket.onerror = function(event) {
+        console.error("Помилка WebSocket: ", event);
+    };
+
+    socket.onclose = function(event) {
+        console.log("WebSocket з'єднання закрите");
+    };
+
+    function deleteAccount(accountNumber) {
+        if (!confirm('Ви впевнені, що хочете видалити цей рахунок?')) {
+            return;
+        }
+
+        var message = {
+            "operation": "DELETE",
+            "accountNumber": accountNumber
+        };
+
+        socket.send(JSON.stringify(message));
     }
-%>
+</script>
+
 
 <h3>Створити новий рахунок</h3>
-<form action="/accounts/create" method="POST">
-    <input type="hidden" name="customerId" value="<%= customer.getId() %>">
+<form onsubmit="createAccount(); return false;">
+    <input type="hidden" id="customerId" value="<%= customer.getId() %>">
+
     <label for="balance">Баланс:</label>
-    <input type="number" id="balance" name="balance" required min="0" step="0.01"><br><br>
+    <input type="number" id="balance" required min="0" step="0.01"><br><br>
 
     <label for="currency">Валюта:</label>
-    <select id="currency" name="currency" required>
+    <select id="currency" required>
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="UAH">UAH</option>
@@ -113,6 +151,45 @@
 
     <button type="submit">Створити рахунок</button>
 </form>
+<script>
+    var socket = new WebSocket('ws://localhost:9000/ws/accounts/create');
+
+    socket.onopen = function() {
+        console.log("WebSocket підключено для створення рахунку");
+    };
+
+    socket.onmessage = function (event) {
+        var response = JSON.parse(event.data);
+        if (response.status === "success") {
+            alert("✅ " + response.message);
+        } else {
+            alert("❌ Помилка: " + response.message);
+        }
+    };
+
+    socket.onerror = function(event) {
+        console.error("Помилка WebSocket: ", event);
+    };
+
+    socket.onclose = function(event) {
+        console.log("WebSocket з'єднання закрите");
+    };
+
+    function createAccount() {
+        var customerId = document.getElementById("customerId").value;
+        var balance = document.getElementById("balance").value;
+        var currency = document.getElementById("currency").value;
+
+        var message = {
+            "operation": "CREATE",
+            "customerId": customerId,
+            "balance": balance,
+            "currency": currency
+        };
+
+        socket.send(JSON.stringify(message));
+    }
+</script>
 
 
 <h3>Додати клієнта до компанії</h3>

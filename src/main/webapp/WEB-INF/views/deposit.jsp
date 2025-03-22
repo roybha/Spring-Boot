@@ -28,9 +28,7 @@
     }
 %>
 
-<form action="/accounts/deposit" method="POST">
-    <input type="hidden" name="operation" value="deposit">
-
+<form onsubmit="deposit(); return false;">
     <label for="accountNumber">Номер рахунку:</label>
     <input type="text" id="accountNumber" name="accountNumber" required><br><br>
 
@@ -39,6 +37,44 @@
 
     <button type="submit">Поповнити рахунок</button>
 </form>
+
+<script type="text/javascript">
+    var socket = new WebSocket('ws://localhost:9000/ws/accounts/deposit');
+
+    socket.onopen = function() {
+        console.log("WebSocket підключено");
+    };
+
+    socket.onmessage = function (event) {
+        var response = JSON.parse(event.data);
+        if (response.status === "success") {
+            alert("✅ " + response.message);
+        } else {
+            alert("❌ Помилка: " + response.message);
+        }
+    };
+
+    socket.onerror = function(event) {
+        console.error("Помилка WebSocket: ", event);
+    };
+
+    socket.onclose = function(event) {
+        console.log("WebSocket з'єднання закрите");
+    };
+
+    function deposit() {
+        var accountNumber = document.getElementById("accountNumber").value;
+        var amount = document.getElementById("balance").value;
+
+        var message = {
+            "operation": "DEPOSIT",
+            "accountNumber": accountNumber,
+            "amount": amount
+        };
+
+        socket.send(JSON.stringify(message));
+    }
+</script>
 
 <a href="/accounts/operation">Повернутися на сторінку опцій</a>
 

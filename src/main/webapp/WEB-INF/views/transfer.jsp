@@ -29,9 +29,7 @@
     }
 %>
 
-<form action="/accounts/transfer" method="POST">
-    <input type="hidden" name="operation" value="transfer">
-
+<form onsubmit="event.preventDefault(); transfer();">
     <label for="fromAccountNumber">Номер рахунку:</label>
     <input type="text" id="fromAccountNumber" name="fromAccountNumber" required><br><br>
 
@@ -40,8 +38,9 @@
 
     <label for="amount">Сума:</label>
     <input type="number" id="amount" name="amount" required min="0.01" step="0.01"><br><br>
+
     <label for="currency">Валюта:</label>
-    <select  id="currency" name="currency" required>
+    <select id="currency" name="currency" required>
         <option value="USD">USD</option>
         <option value="EUR">EUR</option>
         <option value="UAH">UAH</option>
@@ -51,6 +50,45 @@
 
     <button type="submit">Переказати гроші</button>
 </form>
+<script>
+    var socket = new WebSocket('ws://localhost:9000/ws/accounts/transfer');
+
+    socket.onopen = function () {
+        console.log("WebSocket з'єднання встановлено");
+    };
+
+    socket.onmessage = function (event) {
+        var response = JSON.parse(event.data);
+
+
+        if (response.status === "success") {
+            alert("✅ " + response.message);
+        } else {
+            alert("❌ Помилка: " + response.message);
+        }
+    };
+
+    socket.onerror = function (error) {
+        console.error("Помилка WebSocket:", error);
+    };
+
+    function transfer() {
+        var fromAccount = document.getElementById("fromAccountNumber").value;
+        var toAccount = document.getElementById("toAccountNumber").value;
+        var amount = document.getElementById("amount").value;
+        var currency = document.getElementById("currency").value;
+
+        var transferRequest = {
+            operation: "TRANSFER",
+            fromAccount: fromAccount,
+            toAccount: toAccount,
+            amount: parseFloat(amount),
+            currency: currency
+        };
+
+        socket.send(JSON.stringify(transferRequest));
+    }
+</script>
 
 <a href="/accounts/operation">Повернутися на сторінку опцій</a>
 

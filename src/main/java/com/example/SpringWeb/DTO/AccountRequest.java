@@ -1,10 +1,14 @@
 package com.example.SpringWeb.DTO;
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class AccountRequest {
     @Min(value = 1,message="ID не може убути менше 1")
     private Long id;
@@ -24,5 +28,10 @@ public class AccountRequest {
     private Long customerId;
     public  AccountRequest(String accountNumber){
         this.accountNumber = accountNumber;
+    }
+    public AccountRequest(String currency,Double balance,Long customerId){
+        this.currency = currency;
+        this.balance = balance;
+        this.customerId = customerId;
     }
 }

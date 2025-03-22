@@ -1,11 +1,13 @@
 package com.example.SpringWeb.DTO;
 
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@AllArgsConstructor
 public class TransferRequest {
     @NotBlank(message = "Треба вказати номер відправника")
     private String fromAccountNumber;
